@@ -1,0 +1,7 @@
+[
+  {"_id":"static1","title":"Attack on Titan","genres":["Action","Drama","Fantasy"],"image":"https://cdn.myanimelist.net/images/anime/10/47347.jpg"},
+  {"_id":"static2","title":"Demon Slayer","genres":["Action","Supernatural"],"image":"https://cdn.myanimelist.net/images/anime/1286/99889.jpg"},
+  {"_id":"static3","title":"Your Name","genres":["Romance","Drama"],"image":"https://cdn.myanimelist.net/images/anime/5/87048.jpg"},
+  {"_id":"static4","title":"Fullmetal Alchemist: Brotherhood","genres":["Action","Adventure"],"image":"https://cdn.myanimelist.net/images/anime/1223/96541.jpg"},
+  {"_id":"static5","title":"Steins;Gate","genres":["Sci-Fi","Thriller"],"image":"https://cdn.myanimelist.net/images/anime/1935/127974.jpg"}
+]

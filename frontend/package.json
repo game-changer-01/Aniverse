@@ -1,0 +1,35 @@
+{
+  "name": "aniverse-frontend",
+  "version": "1.0.0",
+  "description": "AnimeVerse frontend application",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+  "gsap": "^3.12.2",
+  "axios": "^1.5.0",
+  "framer-motion": "^10.16.4",
+  "swr": "^2.2.0",
+  "animejs": "^3.2.1",
+  "@stripe/stripe-js": "^2.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.50.0",
+    "eslint-config-next": "^14.0.0"
+  },
+  "keywords": [
+    "anime",
+    "streaming",
+    "nextjs",
+    "react"
+  ],
+  "author": "AnimeVerse Team",
+  "license": "MIT"
+}
