@@ -30,7 +30,8 @@ export default function LoginPage() {
           const resp = await axios.post('/api/auth/google', { credential });
           if (resp.data?.token) {
             localStorage.setItem('token', resp.data.token);
-            router.push('/');
+            try { localStorage.setItem('aniverse.justAuthed', '1'); } catch {}
+            router.push('/recommendations#browse');
           }
         } catch (e) {
           setError(e?.response?.data?.error || e.message || 'Google login failed');
@@ -55,7 +56,8 @@ export default function LoginPage() {
       const res = await axios.post('/api/auth/login', { email, password });
       if (res.data?.token) {
         localStorage.setItem('token', res.data.token);
-        router.push('/');
+        try { localStorage.setItem('aniverse.justAuthed', '1'); } catch {}
+        router.push('/recommendations#browse');
       }
     } catch (err) {
       setError(err?.response?.data?.error || 'Login failed');

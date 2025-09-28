@@ -2,18 +2,28 @@ const Anime = require('../models/Anime');
 
 exports.getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 20, genre, year, status } = req.query;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, Math.min(200, parseInt(req.query.limit, 10) || 20));
+    const { genre, year, status, search } = req.query;
     const filter = {};
     
     if (genre) filter.genres = { $in: [genre] };
     if (year) filter.year = year;
     if (status) filter.status = status;
 
-    const animes = await Anime.find(filter)
-      .select('-episodes')
-      .limit(limit * 1)
+    let query = Anime.find(filter).select('-episodes');
+    let sort = { createdAt: -1 };
+    if (search && search.trim()) {
+      // Use text index when available
+      query = Anime.find({ ...filter, $text: { $search: search.trim() } })
+        .select({ episodes: 0, score: { $meta: 'textScore' } });
+      sort = { score: { $meta: 'textScore' } };
+    }
+
+    const animes = await query
+      .limit(limit)
       .skip((page - 1) * limit)
-      .sort({ createdAt: -1 });
+      .sort(sort);
 
     const total = await Anime.countDocuments(filter);
 
@@ -41,6 +51,16 @@ exports.getTrending = async (req, res) => {
   try {
     const list = await Anime.find({ trending: true }).select('-episodes').limit(12);
     res.json({ anime: list });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getTopPopular = async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(500, parseInt(req.query.limit, 10) || 500));
+    const list = await Anime.find({}).select('-episodes').sort({ popularity: -1 }).limit(limit);
+    res.json({ anime: list, total: list.length });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

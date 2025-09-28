@@ -4,7 +4,9 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 import PosterImage from '../src/components/PosterImage';
 import RecommendationHero from '../src/components/RecommendationHero';
+import ThreeBackground from '../src/components/ThreeBackground';
 import AnimeGrid from '../src/components/AnimeGrid';
+import TopPopular from '../src/components/TopPopular';
 import SeasonRoadmap, { SEASONS } from '../src/components/SeasonRoadmap';
 const DynamicTimeline = dynamic(() => import('../src/components/RecommendationTimeline'), { ssr:false, loading: () => <div style={{padding:'4rem', textAlign:'center'}}>Preparing timeline...</div> });
 import axios from 'axios';
@@ -31,6 +33,7 @@ const RecommendationsPage = () => {
   const [error, setError] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
   const [season, setSeason] = useState('s1');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('hybrid');
   const [timelineShouldPlay, setTimelineShouldPlay] = useState(false);
   const [timelineLoaded, setTimelineLoaded] = useState(false);
@@ -55,6 +58,10 @@ const RecommendationsPage = () => {
       const savedSeason = localStorage.getItem('aniverse.selectedSeason');
       if (savedSeason) setSeason(savedSeason);
     } catch {}
+    // Read query param ?search
+    if (router && router.query && typeof router.query.search === 'string') {
+      setSearchQuery(router.query.search);
+    }
     // Check if user is logged in
     const token = localStorage.getItem('token');
     if (token) {
@@ -204,7 +211,7 @@ const RecommendationsPage = () => {
     }
 
     // Navigate to anime details
-    router.push(`/anime/${anime._id}`);
+    router.push(`/anime/${anime._id || anime.id}`);
   };
 
   // Removed watch flow per UI update
@@ -281,6 +288,20 @@ const RecommendationsPage = () => {
   // Remove full-screen loading; inline loaders handled in sections
   useCardEntranceAnimation([recommendations]);
 
+  // If arriving right after login/signup, or with #browse, scroll to the anime list
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const justAuthed = localStorage.getItem('aniverse.justAuthed');
+      const hash = window.location.hash;
+      if (justAuthed === '1' || hash === '#browse') {
+        localStorage.removeItem('aniverse.justAuthed');
+        const el = document.getElementById('browse');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } catch {}
+  }, []);
+
   // SWR: keep recommendations warm in background after start
   const swr = useRecommendations(selectedAlgorithm, season, fetchEnabled);
   useEffect(() => {
@@ -310,14 +331,24 @@ const RecommendationsPage = () => {
       {!showTimeline ? (
         <>
           <div className="hero-wrap">
-          <RecommendationHero 
-            user={user} 
-            onStartRecommendations={handleStartRecommendations}
-            showStartCta={false}
-          />
+            <ThreeBackground className="hero-bg" />
+            <div className="hero-inner">
+              <RecommendationHero 
+                user={user} 
+                onStartRecommendations={handleStartRecommendations}
+                showStartCta={false}
+              />
+            </div>
           </div>
           {/* New: show a browse grid first to let users pick an anime, then reveal roadmap on Details */}
-          <AnimeGrid onSelectAnime={handleSelectAnime} />
+          <div id="browse">
+            <AnimeGrid onSelectAnime={handleSelectAnime} pageSize={24} search={searchQuery} />
+          </div>
+          {/* Top 500 Popular (Japan) */}
+          <section className="top-popular">
+            <h2>Top 500 Popular Anime (JP)</h2>
+            <TopPopular />
+          </section>
           <div className="algorithm-selector" role="tablist" aria-label="Recommendation algorithm selection">
             <h3>Choose Your Recommendation Style</h3>
             <div className="algorithm-options">
@@ -525,6 +556,8 @@ const RecommendationsPage = () => {
       <style jsx>{`
   .recommendations-page { min-height:100vh; background:${colors.bgDark}; display:flex; flex-direction:column; }
   .hero-wrap { position:relative; isolation:isolate; z-index:0; contain:content; }
+  .hero-bg { pointer-events:none; filter: saturate(1.1) brightness(1); opacity:0.7; }
+  .hero-inner { position:relative; z-index:1; }
   .post-start-wrapper { padding:2rem 0 6rem; background:${colors.bgDark}; opacity:0; transform: translateY(24px); filter: blur(2px); transition: opacity .5s ease, transform .5s ease, filter .5s ease; }
   .post-start-wrapper.reveal { opacity:1; transform:none; filter:none; }
   .recommendation-section { max-width:1300px; margin:0 auto; padding:2rem 2rem 4rem; }

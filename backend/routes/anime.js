@@ -5,6 +5,7 @@ const c = require('../controllers/animeController');
 router.get('/', c.getAll);
 router.get('/featured', c.getFeatured);
 router.get('/trending', c.getTrending);
+router.get('/top-popular', c.getTopPopular);
 router.get('/:id', c.getOne);
 router.get('/:id/episodes', c.getEpisodes);
 

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 const Layout = ({ children }) => {
   return (
@@ -16,13 +17,34 @@ const Layout = ({ children }) => {
 };
 
 const Header = () => {
+  const router = useRouter();
+  const [q, setQ] = useState('');
+  const onSubmit = (e) => {
+    e.preventDefault();
+    const query = q.trim();
+    if (!query) return;
+    // Navigate to recommendations with search parameter; page will use it to fetch
+    router.push(`/recommendations?search=${encodeURIComponent(query)}#browse`);
+  };
   return (
     <header className="site-header" role="banner">
       <div className="nav-inner">
         <div className="logo"><Link href="/">AniVerse</Link></div>
         <nav className="primary-nav" aria-label="Main Navigation">
+          <Link href="/">Home</Link>
           <Link href="/recommendations">Recommendations</Link>
+          <Link href="/catalog">Catalog</Link>
+          <Link href="/news">News</Link>
         </nav>
+        <form className="search" role="search" aria-label="Search anime" onSubmit={onSubmit}>
+          <input
+            type="search"
+            placeholder="Search anime..."
+            value={q}
+            onChange={(e)=>setQ(e.target.value)}
+            aria-label="Search anime"
+          />
+        </form>
       </div>
       <style jsx>{`
         .site-header { backdrop-filter: blur(10px); background: rgba(15,15,25,0.6); position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,0.4); }
@@ -30,6 +52,8 @@ const Header = () => {
         .logo { font-weight:700; font-size:1.25rem; letter-spacing:1px; background:linear-gradient(45deg,#ff6b6b,#4ecdc4); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
         .primary-nav a { margin-left:1.5rem; font-size:0.95rem; opacity:0.85; transition:opacity .2s; }
         .primary-nav a:hover, .primary-nav a:focus { opacity:1; }
+        .search { margin-left:1rem; }
+        .search input { background:#0f1522; border:1px solid #2e3d55; color:#fff; border-radius:999px; padding:.4rem .8rem; min-width:220px; }
         @media (max-width:640px){ .primary-nav a { margin-left:1rem; } }
       `}</style>
     </header>

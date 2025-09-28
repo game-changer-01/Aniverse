@@ -42,7 +42,8 @@ export default function SignupPage() {
       const res = await axios.post('/api/auth/register', { username, email, password });
       if (res.data?.token) {
         localStorage.setItem('token', res.data.token);
-        router.push('/');
+        try { localStorage.setItem('aniverse.justAuthed', '1'); } catch {}
+        router.push('/recommendations#browse');
       }
     } catch (err) {
       setError(err?.response?.data?.error || 'Signup failed');

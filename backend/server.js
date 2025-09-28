@@ -7,6 +7,15 @@ const os = require('os');
 // Load environment variables
 dotenv.config();
 
+// Security: Require JWT secret in production
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.error('[CONFIG] Missing JWT_SECRET in production environment. Exiting.');
+  process.exit(1);
+}
+if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+  console.warn('[CONFIG] JWT_SECRET is short; use a strong random string (>= 32 chars).');
+}
+
 const app = express();
 
 // --- Connection logging helpers ---
@@ -33,6 +42,8 @@ app.use('/api/watch', require('./routes/watch'));
 app.use('/api/images', require('./routes/images'));
 app.use('/api/identity', require('./routes/identity'));
 app.use('/api/billing', require('./routes/billing'));
+app.use('/api/jikan', require('./routes/jikan'));
+app.use('/api/anilist', require('./routes/anilist'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

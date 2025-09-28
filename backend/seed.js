@@ -17,7 +17,8 @@ const sampleAnimes = [
     genres: ["Action", "Drama", "Fantasy"],
     studio: "Mappa",
     totalEpisodes: 75,
-    featured: true,
+  featured: true,
+  popularity: 980,
     trending: true,
     episodes: [
       {
@@ -48,7 +49,8 @@ const sampleAnimes = [
     genres: ["Action", "Supernatural", "Historical"],
     studio: "Ufotable",
     totalEpisodes: 44,
-    featured: true,
+  featured: true,
+  popularity: 920,
     trending: true,
     episodes: [
       {
@@ -72,7 +74,8 @@ const sampleAnimes = [
     genres: ["Romance", "Drama", "Supernatural"],
     studio: "CoMix Wave Films",
     totalEpisodes: 1,
-    featured: true,
+  featured: true,
+  popularity: 870,
     trending: false,
     episodes: [
       {
@@ -96,7 +99,8 @@ const sampleAnimes = [
     genres: ["Action", "Adventure", "Comedy"],
     studio: "Toei Animation",
     totalEpisodes: 1000,
-    featured: false,
+  featured: false,
+  popularity: 999,
     trending: true,
     episodes: [
       {
@@ -120,7 +124,8 @@ const sampleAnimes = [
     genres: ["Adventure", "Family", "Supernatural"],
     studio: "Studio Ghibli",
     totalEpisodes: 1,
-    featured: true,
+  featured: true,
+  popularity: 890,
     trending: false,
     episodes: [
       {
@@ -144,7 +149,8 @@ const sampleAnimes = [
     genres: ["Action", "Adventure", "Martial Arts"],
     studio: "Pierrot",
     totalEpisodes: 720,
-    featured: false,
+  featured: false,
+  popularity: 910,
     trending: true,
     episodes: [
       {
@@ -157,6 +163,40 @@ const sampleAnimes = [
     ]
   }
 ];
+
+// Generate additional synthetic popular anime to reach ~500 items
+function generatePopular(n = 500) {
+  const arr = [];
+  for (let i = 1; i <= n; i++) {
+    const pop = 1000 - i; // ensure a descending popularity
+    arr.push({
+      title: `Popular Anime JP #${i}`,
+      description: `Synthetic entry #${i} for testing Top Popular listing.`,
+      poster: "https://cdn.myanimelist.net/images/anime/10/47347.jpg",
+      banner: "https://cdn.myanimelist.net/images/anime/10/47347l.jpg",
+      trailer: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      year: 2000 + (i % 25),
+      status: i % 3 === 0 ? 'Completed' : 'Ongoing',
+      rating: Math.max(6, 10 - (i % 5) * 0.3),
+      genres: ["Action", "Adventure", (i % 2 ? "Fantasy" : "Drama")],
+      studio: "Studio Test",
+      totalEpisodes: 12 + (i % 3) * 12,
+      featured: false,
+      trending: i % 4 === 0,
+      popularity: pop,
+      episodes: [
+        {
+          number: 1,
+          title: `Episode 1`,
+          duration: 24,
+          streamUrl: `https://example.com/stream/popular-${i}-ep1.m3u8`,
+          thumbnail: "https://cdn.myanimelist.net/images/anime/10/47347.jpg"
+        }
+      ]
+    });
+  }
+  return arr;
+}
 
 const seedDatabase = async () => {
   try {
@@ -172,8 +212,9 @@ const seedDatabase = async () => {
     await Anime.deleteMany({});
     console.log('Cleared existing anime data');
 
-    // Insert sample data
-    await Anime.insertMany(sampleAnimes);
+  // Insert sample data + generated popular
+  const data = sampleAnimes.concat(generatePopular(500));
+  await Anime.insertMany(data);
     console.log('Sample anime data inserted successfully');
 
     console.log('Database seeded successfully!');

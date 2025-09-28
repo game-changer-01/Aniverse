@@ -1,5 +1,8 @@
 # AnimeVerse
 
+![CI](https://github.com/samarpithmenezes32/Aniverse/actions/workflows/ci.yml/badge.svg)
+![Deploy](https://github.com/samarpithmenezes32/Aniverse/actions/workflows/deploy.yml/badge.svg)
+
 A modern, full-stack anime streaming platform built with Next.js and Node.js.
 
 ## 🚀 Features
@@ -48,18 +51,18 @@ aniverse/
 ### Backend Setup
 
 1. Navigate to the backend directory:
-   ```bash
-   cd backend
+   ```powershell
+   Set-Location -Path .\backend
    ```
 
 2. Install dependencies:
-   ```bash
+   ```powershell
    npm install
    ```
 
 3. Create environment file:
-   ```bash
-   cp .env.example .env
+   ```powershell
+   Copy-Item .env.example .env
    ```
 
 4. Update `.env` with your configuration:
@@ -68,12 +71,12 @@ aniverse/
    - Cloudflare R2 credentials (if using)
 
 5. Seed the database:
-   ```bash
+   ```powershell
    npm run seed
    ```
 
 6. Start the development server:
-   ```bash
+   ```powershell
    npm run dev
    ```
 
@@ -82,24 +85,24 @@ The backend will be running at `http://localhost:5000`
 ### Frontend Setup
 
 1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
+   ```powershell
+   Set-Location -Path ..\frontend
    ```
 
 2. Install dependencies:
-   ```bash
+   ```powershell
    npm install
    ```
 
 3. Create environment file:
-   ```bash
-   cp .env.example .env.local
+   ```powershell
+   Copy-Item .env.example .env.local
    ```
 
 4. Update `.env.local` with your backend URL
 
 5. Start the development server:
-   ```bash
+   ```powershell
    npm run dev
    ```
 
@@ -109,10 +112,15 @@ The frontend will be running at `http://localhost:3000`
 
 ### Automated Deployment
 
-The project includes GitHub Actions workflows for automated deployment:
+This repo ships with GitHub Actions workflows:
 
-- **Frontend**: Deploys to Vercel
-- **Backend**: Deploys to Render
+- `ci.yml` (Continuous Integration):
+   - Spins up MongoDB
+   - Installs backend, seeds DB, boots API, runs smoke tests
+   - Installs and builds the Next.js frontend (points to the local API)
+- `deploy.yml` (Deployment):
+   - Frontend: Deploys to Vercel (requires `VERCEL_TOKEN`)
+   - Backend: Triggers a Render deploy (requires `RENDER_SERVICE_ID`, `RENDER_API_KEY`)
 
 ### Required Secrets
 
@@ -121,6 +129,7 @@ Add these secrets to your GitHub repository:
 - `VERCEL_TOKEN`: Your Vercel deployment token
 - `RENDER_SERVICE_ID`: Your Render service ID
 - `RENDER_API_KEY`: Your Render API key
+ - (Optional) `NEXT_PUBLIC_API_URL`: If you want to build the frontend against a specific API URL in CI
 
 ### Manual Deployment
 
@@ -193,6 +202,23 @@ npm test
 # Frontend tests
 cd frontend
 npm test
+```
+
+## 🧰 Local Quick Start (Windows PowerShell)
+
+```powershell
+# Backend
+Set-Location -Path .\backend
+npm install
+Copy-Item .env.example .env
+npm run seed
+npm run dev
+
+# In a new terminal
+Set-Location -Path ..\frontend
+npm install
+Copy-Item .env.example .env.local
+npm run dev
 ```
 
 ## 📈 Performance Optimizations

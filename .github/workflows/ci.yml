@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/aniverse
+      NODE_ENV: development
+      PORT: 5000
+      # Optional integrations left blank on CI
+      JWT_SECRET: dev_dummy_secret_for_ci_please_rotate
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Seed database
+        working-directory: backend
+        run: node seed.js
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          nohup npm start >/tmp/backend.log 2>&1 &
+          echo "Waiting for backend on http://127.0.0.1:${PORT}/api/health ..."
+          for i in {1..30}; do
+            if curl -fsS "http://127.0.0.1:${PORT}/api/health" >/dev/null; then
+              echo "Backend is up"; break; fi; sleep 2; done
+          curl -fsS "http://127.0.0.1:${PORT}/api/health" -v || (echo 'Backend failed to start'; tail -n 200 /tmp/backend.log; exit 1)
+
+      - name: Smoke test API
+        run: |
+          curl -fsS "http://127.0.0.1:${PORT}/api/anime/top-popular?limit=3" | jq . >/dev/null 2>&1 || curl -fsS "http://127.0.0.1:${PORT}/api/anime/top-popular?limit=3"
+          curl -fsS "http://127.0.0.1:${PORT}/api/anime?limit=5&search=One%20Piece" >/dev/null
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:${{ env.PORT }}/api
+        run: npm run build
+
+      - name: Dump backend logs on failure
+        if: failure()
+        run: |
+          echo '--- backend log tail ---'
+          tail -n 200 /tmp/backend.log || true

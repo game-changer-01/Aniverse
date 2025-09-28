@@ -9,10 +9,13 @@ exports.search = async (req, res) => {
     const q = (req.query.q || req.query.query || '').toString().trim();
     if (!q) return res.status(400).json({ error: 'Missing query' });
 
-    const key = process.env.GOOGLE_CSE_KEY;
-    const cx = process.env.GOOGLE_CSE_CX;
+  const key = process.env.GOOGLE_CSE_KEY;
+  const cx = process.env.GOOGLE_CSE_CX;
     const rights = process.env.GOOGLE_CSE_RIGHTS; // e.g. cc_publicdomain|cc_attribute
-    if (!key || !cx) return res.status(500).json({ error: 'Image search not configured' });
+    if (!key || !cx) {
+      // Return empty result with 200 so clients can fallback silently
+      return res.json({ items: [], warning: 'Image search not configured' });
+    }
 
     const cacheKey = JSON.stringify({ q, rights });
     const now = Date.now();

@@ -6,21 +6,7 @@ export default function PosterImage({ title, src, alt, fill = true, sizes = '200
   const [errored, setErrored] = useState(false);
 
   useEffect(() => { setUrl(src || ''); setErrored(false); }, [src]);
-
-  useEffect(() => {
-    if (url || !title) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const resp = await fetch(`/api/images/search?q=${encodeURIComponent(title + ' anime poster')}`);
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const first = data.items?.[0]?.url;
-        if (!cancelled && first) setUrl(first);
-      } catch {}
-    })();
-    return () => { cancelled = true; };
-  }, [title, url]);
+  // Note: No Google CSE fallback; if no URL, show a simple placeholder box
 
   // If the domain isn't in next.config images.domains, Next Image will fail.
   // Strategy: try Next/Image first; on error, fall back to a plain <img> tag.
@@ -40,9 +26,13 @@ export default function PosterImage({ title, src, alt, fill = true, sizes = '200
   if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={url} alt={alt || title || 'Poster'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
+      <img src={url} alt={alt || title || 'Poster'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => { setErrored(true); setUrl(''); }} />
     );
   }
 
-  return <div className="no-img">No Image</div>;
+  return <div className="no-img">No Image
+    <style jsx>{`
+      .no-img { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#0e141f; color:#6b7280; font-size:.8rem; border:1px solid #28344d; border-radius:8px; }
+    `}</style>
+  </div>;
 }

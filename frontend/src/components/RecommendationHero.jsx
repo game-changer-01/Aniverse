@@ -14,8 +14,8 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
   const videoRef = useRef(null);
   const playlist = React.useMemo(() => [
     '/video/hero-trailer.mp4',
-    '/video/hero-trailer2.mp4.mp4',
-    '/video/hero-trailer3.mp4.mp4',
+    '/video/hero-trailer2.mp4',
+    '/video/hero-trailer3.mp4',
   ], []);
   const [videoIndex, setVideoIndex] = useState(0);
   const currentVideoSrc = playlist[videoIndex];
@@ -163,8 +163,8 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
       
       <style jsx>{`
   .recommendation-hero { position:relative; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; color:#fff; }
-        .video-bg { position:absolute; inset:0; z-index:0; }
-        .bg-video { width:100%; height:100%; object-fit:cover; }
+  .video-bg { position:absolute; inset:0; z-index:0; }
+  .bg-video { width:100%; height:100%; object-fit:cover; background:none; }
   .video-vignette { position:absolute; inset:0; background:linear-gradient(180deg, rgba(10,10,20,0.35) 0%, rgba(10,10,20,0.55) 40%, rgba(10,10,20,0.85) 75%, #0b0b0f 100%); pointer-events:none; }
   .hero-bottom-fade { position:absolute; left:0; right:0; bottom:-1px; height:160px; background:linear-gradient(180deg, rgba(11,11,15,0) 0%, #0b0b0f 75%); z-index:1; pointer-events:none; }
   .section-break { height:48px; background:#0b0b0f; }

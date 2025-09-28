@@ -23,13 +23,13 @@ const nextConfig = {
     ];
   },
   
-  // Image domains for anime posters
+  // Remote image patterns for anime posters
   images: {
-    domains: [
-      'cdn.myanimelist.net',
-      'example.com',
-      'your-cdn-domain.com'
-    ],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'cdn.myanimelist.net' },
+      { protocol: 'https', hostname: 'example.com' },
+      { protocol: 'https', hostname: 'your-cdn-domain.com' }
+    ]
   },
   
   // Environment variables
