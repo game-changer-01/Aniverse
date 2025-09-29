@@ -49,19 +49,21 @@ jobs:
     permissions:
       contents: read
       deployments: write
-    # This job only runs if the secret is set in the GitHub repo.
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Deploy to Vercel
-        uses: vercel/action@v1
-        with:
-          token: ${{ secrets.VERCEL_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          vercel-args: '--prod'
-          working-directory: ./frontend
+
+      - name: Deploy using Vercel CLI (skips if no token)
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "No VERCEL_TOKEN secret set; skipping frontend deploy.";
+            exit 0;
+          fi
+          npm install --global vercel@latest
+          cd frontend
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
 
   deploy-backend:
     name: Deploy Backend to Render
@@ -69,14 +71,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    # This job only runs if both secrets are set in the GitHub repo.
-    if: ${{ secrets.RENDER_SERVICE_ID != '' && secrets.RENDER_API_KEY != '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Trigger Render Deploy
+      - name: Trigger Render Deploy (skips if secrets missing)
         run: |
+          if [ -z "${{ secrets.RENDER_SERVICE_ID }}" ] || [ -z "${{ secrets.RENDER_API_KEY }}" ]; then
+            echo "Missing RENDER_SERVICE_ID or RENDER_API_KEY; skipping backend deploy.";
+            exit 0;
+          fi
           echo "Triggering deployment to Render..."
           curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
             -H "Accept: application/json" \
