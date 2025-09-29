@@ -40,6 +40,9 @@ const RecommendationsPage = () => {
   const [meta, setMeta] = useState({ guest:false, warning:null, algorithm:null, degraded:false });
   const [selectedAnimeInfo, setSelectedAnimeInfo] = useState({ title: '', seasonData: [], malId: null, poster: '', totalEpisodes: 0 });
   const [selectedAnimeEpisodes, setSelectedAnimeEpisodes] = useState([]);
+  const [episodeFilter, setEpisodeFilter] = useState('all'); // all | canon
+  const [topMovies, setTopMovies] = useState([]);
+  const [relatedMovies, setRelatedMovies] = useState([]);
   const staticLocalFallback = React.useMemo(() => [
     { _id:'local1', title:'Attack on Titan', genres:['Action','Drama'], image:'https://cdn.myanimelist.net/images/anime/10/47347.jpg' },
     { _id:'local2', title:'Demon Slayer', genres:['Action','Supernatural'], image:'https://cdn.myanimelist.net/images/anime/1286/99889.jpg' },
@@ -139,6 +142,15 @@ const RecommendationsPage = () => {
     setShowTimeline(true);
     setFetchEnabled(true);
     fetchRecommendations(selectedAlgorithm, season);
+    // Prefetch Top Movies (special category)
+    (async () => {
+      try {
+        const resp = await axios.get('/api/jikan/top?limit=50');
+        const items = Array.isArray(resp.data?.anime) ? resp.data.anime : [];
+        const movies = items.filter(a => (a.type || '').toLowerCase() === 'movie');
+        setTopMovies(movies.slice(0, 20));
+      } catch {}
+    })();
   };
 
   // When a user clicks Details in the top list, show the roadmap and tailor recommendations around that anime
@@ -179,6 +191,13 @@ const RecommendationsPage = () => {
           title = details?.title || title;
           poster = details?.images?.jpg?.large_image_url || details?.images?.jpg?.image_url || poster;
           totalEpisodes = epCount || 0;
+          // collect related movies from relations
+          try {
+            const rels = Array.isArray(details?.relations) ? details.relations : [];
+            const relMovies = rels.flatMap(r => (Array.isArray(r.entry) ? r.entry : []).map(e => ({ ...e, relation: r.relation })) )
+              .filter(e => (e.type || '').toLowerCase() === 'anime' && /movie/i.test(e.name || e.title || ''));
+            setRelatedMovies(relMovies);
+          } catch {}
           // Fetch all episodes for this anime (paginate)
           try {
             let all = [];
@@ -331,7 +350,10 @@ const RecommendationsPage = () => {
     const [start, end] = seasonSliceRange(selectedAnimeInfo?.totalEpisodes || selectedAnimeEpisodes.length);
     return selectedAnimeEpisodes.filter(ep => {
       const num = ep.episode || ep.number || 0;
-      return num >= start && num <= end;
+      const inRange = num >= start && num <= end;
+      if (!inRange) return false;
+      if (episodeFilter === 'canon') return !ep.filler; // exclude filler
+      return true;
     });
   };
 
@@ -583,6 +605,10 @@ const RecommendationsPage = () => {
           {episodesForSeason().length > 0 && (
             <div className="episodes-section">
               <h2 className="section-title">{(SEASONS.find(s => s.key === season)?.label || 'Season')} Episodes</h2>
+              <div className="ep-filters" role="tablist" aria-label="Episode filters">
+                <button className={episodeFilter==='all'?'active':''} onClick={()=>setEpisodeFilter('all')} role="tab" aria-selected={episodeFilter==='all'}>All</button>
+                <button className={episodeFilter==='canon'?'active':''} onClick={()=>setEpisodeFilter('canon')} role="tab" aria-selected={episodeFilter==='canon'}>Canon only</button>
+              </div>
               <div className="ep-grid">
                 {episodesForSeason().map((ep, idx) => {
                   const epNum = ep.episode || ep.number || idx + 1;
@@ -632,6 +658,44 @@ const RecommendationsPage = () => {
               ))}
             </div>
           </div>
+          {/* Special category: Top Movies */}
+          {topMovies.length > 0 && (
+            <div className="recommendation-section">
+              <h2 className="section-title">Special: Top Movies</h2>
+              <div className="rec-grid">
+                {topMovies.map(m => (
+                  <div key={m.mal_id} className="rec-card" aria-label={m.title}>
+                    <div className="poster" onClick={() => router.push(`/jikan/${m.mal_id}`)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') router.push(`/jikan/${m.mal_id}`); }}>
+                      <PosterImage title={m.title} src={m.images?.jpg?.large_image_url || m.images?.jpg?.image_url} alt={m.title} />
+                    </div>
+                    <div className="info">
+                      <h3 className="title">{m.title}</h3>
+                      {m.genres && <div className="genres">{(m.genres||[]).slice(0,3).join(', ')}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Related movies for selected anime */}
+          {relatedMovies.length > 0 && (
+            <div className="recommendation-section">
+              <h2 className="section-title">Movies related to {selectedAnimeInfo.title}</h2>
+              <div className="rec-grid">
+                {relatedMovies.map((rm, idx) => (
+                  <div key={rm.mal_id || idx} className="rec-card" aria-label={rm.name || rm.title}>
+                    <div className="poster" onClick={() => router.push(`/jikan/${rm.mal_id || ''}`)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') router.push(`/jikan/${rm.mal_id || ''}`); }}>
+                      <PosterImage title={rm.name || rm.title} src={selectedAnimeInfo.poster} alt={rm.name || rm.title} />
+                    </div>
+                    <div className="info">
+                      <h3 className="title">{rm.name || rm.title}</h3>
+                      <div className="genres">{rm.relation}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

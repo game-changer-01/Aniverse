@@ -42,13 +42,7 @@ export default function JikanAnimeDetailsPage() {
     return () => { mounted = false; };
   }, [id]);
 
-  const makeQuery = (title, number) => `${title || ''} episode ${number || ''}`.trim();
-  const crunchyLink = (title, number) => `https://www.crunchyroll.com/search?q=${encodeURIComponent(makeQuery(title, number))}`;
-  const netflixLink = (title) => `https://www.netflix.com/search?q=${encodeURIComponent(title || '')}`;
-  const primeLink = (title) => `https://www.amazon.com/s?k=${encodeURIComponent((title || '') + ' anime')}`;
-  const disneyLink = (title) => `https://www.disneyplus.com/search/${encodeURIComponent(title || '')}`;
-  const huluLink = (title) => `https://www.hulu.com/search?q=${encodeURIComponent((title || '') + ' anime')}`;
-  const ytLink = (title, number) => `https://www.youtube.com/results?search_query=${encodeURIComponent(makeQuery(title, number))}`;
+  // Streaming/provider links removed per requirements
 
   if (loading) return <div className="wrap"><div className="loading" role="status">Loading…</div></div>;
   if (error) return <div className="wrap"><div className="error" role="alert">{error}</div></div>;
@@ -86,14 +80,7 @@ export default function JikanAnimeDetailsPage() {
                       <div className="ep-title">{epTitle}</div>
                     </div>
                   </div>
-                  <div className="card-actions">
-                    <a href={crunchyLink(anime.title, epNum)} target="_blank" rel="noreferrer noopener" className="watch">Crunchyroll</a>
-                    <a href={ytLink(anime.title, epNum)} target="_blank" rel="noreferrer noopener" className="watch">YouTube</a>
-                    <a href={netflixLink(anime.title)} target="_blank" rel="noreferrer noopener" className="watch">Netflix</a>
-                    <a href={huluLink(anime.title)} target="_blank" rel="noreferrer noopener" className="watch">Hulu</a>
-                    <a href={primeLink(anime.title)} target="_blank" rel="noreferrer noopener" className="watch">Prime</a>
-                    <a href={disneyLink(anime.title)} target="_blank" rel="noreferrer noopener" className="watch">Disney+</a>
-                  </div>
+                  {/* Provider links removed */}
                 </div>
               );
             })}

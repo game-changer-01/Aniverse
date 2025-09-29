@@ -36,9 +36,10 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/anime', require('./routes/anime'));
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/stream', require('./routes/stream'));
+// Removed streaming features: stream/watch endpoints disabled
+// app.use('/api/stream', require('./routes/stream'));
 app.use('/api/recommend', require('./routes/recommend'));
-app.use('/api/watch', require('./routes/watch'));
+// app.use('/api/watch', require('./routes/watch'));
 app.use('/api/images', require('./routes/images'));
 app.use('/api/identity', require('./routes/identity'));
 app.use('/api/billing', require('./routes/billing'));
