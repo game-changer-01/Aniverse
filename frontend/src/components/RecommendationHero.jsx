@@ -17,7 +17,7 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
     '/video/hero-trailer2.mp4',
     '/video/hero-trailer3.mp4',
   ], []);
-  const [videoIndex, setVideoIndex] = useState(0);
+  const [videoIndex, setVideoIndex] = useState(() => Math.floor(Math.random() * 3));
   const currentVideoSrc = playlist[videoIndex];
   const [isLoaded, setIsLoaded] = useState(false);
   const router = useRouter();
