@@ -113,7 +113,7 @@ export default function JikanAnimeDetailsPage() {
     .ep-card { background:#121a29; border:1px solid #28344d; border-radius:12px; overflow:hidden; box-shadow: 0 6px 20px rgba(0,0,0,.25); transition: transform .25s ease, box-shadow .25s ease; }
     .ep-card:hover { transform: translateY(-4px); box-shadow: 0 10px 26px rgba(0,0,0,.35); }
     .thumb { position:relative; aspect-ratio:16/9; overflow:hidden; background:#0e141f; }
-    .thumb .bg { position:absolute; inset:0; background-image:url(${poster ? `'${poster}'` : "''"}); background-size:cover; background-position:center; filter:brightness(.6) saturate(1.1); transform: scale(1.03); }
+  .thumb .bg { position:absolute; inset:0; background-image:url(${poster ? `'${poster}'` : "''"}); background-size:cover; background-position:center; filter:brightness(.5) saturate(1.05); transform: scale(1.02); }
     .thumb .overlay { position:absolute; inset:auto 0 0 0; padding:.75rem; background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,.0)); display:flex; flex-direction:column; gap:.35rem; }
     .thumb .badge { align-self:flex-start; background:#243249; border:1px solid #2e3d55; color:#cfe7ff; font-weight:700; padding:.15rem .45rem; border-radius:6px; font-size:.8rem; }
     .thumb .ep-title { font-weight:600; }

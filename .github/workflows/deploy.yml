@@ -3,49 +3,85 @@ name: CI & Deploy
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   test-build:
+    name: Test & Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - name: Use Node 20
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
-      - name: Backend install & lint
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Test backend build
         working-directory: backend
         run: |
-          npm ci
-          npm run build --if-present || echo "No build step"
-          npm test --if-present || echo "No tests yet"
+          npm run build --if-present || echo "No build step configured"
+          npm test --if-present || echo "No tests configured"
 
-      - name: Frontend install & build
+      - name: Install frontend dependencies
         working-directory: frontend
-        run: |
-          npm ci
-          npm run build
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          # This var should be set in GitHub Repo Settings > Variables
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api' }}
+        run: npm run build
 
   deploy-frontend:
+    name: Deploy Frontend to Vercel
     needs: test-build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    # This job only runs if the secret is set in the GitHub repo.
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: amondnet/vercel-action@v20
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to Vercel
+        uses: vercel/action@v1
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          token: ${{ secrets.VERCEL_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           vercel-args: '--prod'
           working-directory: ./frontend
 
   deploy-backend:
+    name: Deploy Backend to Render
     needs: test-build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # This job only runs if both secrets are set in the GitHub repo.
+    if: ${{ secrets.RENDER_SERVICE_ID != '' && secrets.RENDER_API_KEY != '' }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Render
-        uses: render-oss/render-deploy-action@v1
-        with:
-          serviceId: ${{ secrets.RENDER_SERVICE_ID }}
-          apiKey: ${{ secrets.RENDER_API_KEY }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Trigger Render Deploy
+        run: |
+          echo "Triggering deployment to Render..."
+          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -d '{"clearCache": false}' \
+            && echo "✅ Deploy request sent successfully" \
+            || echo "❌ Deploy request failed"

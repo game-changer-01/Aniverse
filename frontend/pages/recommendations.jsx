@@ -38,7 +38,8 @@ const RecommendationsPage = () => {
   const [timelineShouldPlay, setTimelineShouldPlay] = useState(false);
   const [timelineLoaded, setTimelineLoaded] = useState(false);
   const [meta, setMeta] = useState({ guest:false, warning:null, algorithm:null, degraded:false });
-  const [selectedAnimeInfo, setSelectedAnimeInfo] = useState({ title: '', seasonData: [] });
+  const [selectedAnimeInfo, setSelectedAnimeInfo] = useState({ title: '', seasonData: [], malId: null, poster: '', totalEpisodes: 0 });
+  const [selectedAnimeEpisodes, setSelectedAnimeEpisodes] = useState([]);
   const staticLocalFallback = React.useMemo(() => [
     { _id:'local1', title:'Attack on Titan', genres:['Action','Drama'], image:'https://cdn.myanimelist.net/images/anime/10/47347.jpg' },
     { _id:'local2', title:'Demon Slayer', genres:['Action','Supernatural'], image:'https://cdn.myanimelist.net/images/anime/1286/99889.jpg' },
@@ -150,29 +151,73 @@ const RecommendationsPage = () => {
       setLoading(true);
       setError(null);
       // Build season roadmap data for the selected anime
-      let title = anime.title || '';
-      let seasonData = [];
+  let title = anime.title || '';
+  let seasonData = [];
+  let malId = anime.mal_id || null;
+  let poster = anime.image || anime.poster || '';
+  let totalEpisodes = 0;
       const palette = ['#6bc5ff','#8fff9f','#ffd36b','#ff8f6b','#b28bff'];
       try {
-        const id = anime._id || anime.id;
-        if (id) {
-          const { data: details } = await axios.get(`/api/anime/${encodeURIComponent(id)}`);
-          // If backend returns explicit seasons
-          if (Array.isArray(details?.seasons) && details.seasons.length) {
-            seasonData = details.seasons.slice(0,5).map((s, i) => ({ key:`s${i+1}`, label: s.name || s.label || `Season ${i+1}`, color: palette[i % palette.length], months: s.subtitle || '' }));
-          } else {
-            // Derive seasons from episode count if available
-            const epCount = Array.isArray(details?.episodes) ? details.episodes.length : (details?.episodeCount || 0);
-            const seasonCount = Math.max(1, Math.min(5, Math.ceil((epCount || 12) / 12)));
-            seasonData = Array.from({ length: seasonCount }).map((_, i) => ({ key:`s${i+1}`, label:`Season ${i+1}`, color: palette[i % palette.length] }));
-          }
+        // If no MAL id, try to resolve via Jikan search by title (best-effort)
+        if (!malId && title) {
+          try {
+            const { data: search } = await axios.get(`/api/jikan/search?q=${encodeURIComponent(title)}&limit=5`);
+            const candidates = Array.isArray(search?.anime) ? search.anime : [];
+            if (candidates.length > 0) {
+              const best = candidates.find(a => (a.title || '').toLowerCase() === title.toLowerCase()) || candidates[0];
+              malId = best.mal_id;
+            }
+          } catch { /* ignore search failure */ }
+        }
+
+        // Prefer Jikan details when we have a MAL id (richer, public data)
+        if (malId) {
+          const { data: details } = await axios.get(`/api/jikan/anime/${encodeURIComponent(malId)}`);
+          const epCount = typeof details?.episodes === 'number' ? details.episodes : 0;
+          const seasonCount = Math.max(1, Math.min(5, Math.ceil((epCount || 12) / 12)));
+          seasonData = Array.from({ length: seasonCount }).map((_, i) => ({ key:`s${i+1}`, label:`Season ${i+1}`, color: palette[i % palette.length] }));
           title = details?.title || title;
+          poster = details?.images?.jpg?.large_image_url || details?.images?.jpg?.image_url || poster;
+          totalEpisodes = epCount || 0;
+          // Fetch all episodes for this anime (paginate)
+          try {
+            let all = [];
+            let page = 1;
+            const limit = 100;
+            for (let i = 0; i < 10; i++) {
+              const { data: eps } = await axios.get(`/api/jikan/anime/${encodeURIComponent(malId)}/episodes?page=${page}&limit=${limit}`);
+              const list = Array.isArray(eps?.episodes) ? eps.episodes : [];
+              all = all.concat(list);
+              const hasNext = eps?.pagination?.has_next_page;
+              if (!hasNext || list.length === 0) break;
+              page += 1;
+            }
+            setSelectedAnimeEpisodes(all);
+            if (!totalEpisodes && all.length) totalEpisodes = all.length;
+          } catch {}
+        } else {
+          // Fallback to local database details if MAL id is missing
+          const id = anime._id || anime.id;
+          if (id) {
+            const { data: details } = await axios.get(`/api/anime/${encodeURIComponent(id)}`);
+            if (Array.isArray(details?.seasons) && details.seasons.length) {
+              seasonData = details.seasons.slice(0,5).map((s, i) => ({ key:`s${i+1}`, label: s.name || s.label || `Season ${i+1}`, color: palette[i % palette.length], months: s.subtitle || '' }));
+            } else {
+              const epCount = Array.isArray(details?.episodes) ? details.episodes.length : (details?.episodeCount || 0);
+              const seasonCount = Math.max(1, Math.min(5, Math.ceil((epCount || 12) / 12)));
+              seasonData = Array.from({ length: seasonCount }).map((_, i) => ({ key:`s${i+1}`, label:`Season ${i+1}`, color: palette[i % palette.length] }));
+            }
+            title = details?.title || title;
+            poster = details?.image || details?.poster || poster;
+            totalEpisodes = Array.isArray(details?.episodes) ? details.episodes.length : (details?.episodeCount || 0);
+            setSelectedAnimeEpisodes(Array.isArray(details?.episodes) ? details.episodes : []);
+          }
         }
       } catch {
         // Fallback generic seasons
         seasonData = Array.from({ length: 3 }).map((_, i) => ({ key:`s${i+1}`, label:`Season ${i+1}`, color: palette[i % palette.length] }));
       }
-      setSelectedAnimeInfo({ title, seasonData });
+  setSelectedAnimeInfo({ title, seasonData, malId, poster, totalEpisodes });
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       // Ask backend for recommendations biased around this anime (fallback to hybrid if unsupported)
@@ -271,6 +316,23 @@ const RecommendationsPage = () => {
       const el = document.querySelector('.recommendation-section');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  // Helpers for episode slicing per selected season
+  const seasonIndex = Math.max(0, (season && season.startsWith('s') ? (parseInt(season.slice(1)) - 1) : 0));
+  const seasonSliceRange = (total) => {
+    const size = 12;
+    const start = seasonIndex * size + 1; // 1-based
+    const end = Math.min(total || (seasonIndex + 1) * size, (seasonIndex + 1) * size);
+    return [start, end];
+  };
+  const episodesForSeason = () => {
+    if (!selectedAnimeEpisodes || selectedAnimeEpisodes.length === 0) return [];
+    const [start, end] = seasonSliceRange(selectedAnimeInfo?.totalEpisodes || selectedAnimeEpisodes.length);
+    return selectedAnimeEpisodes.filter(ep => {
+      const num = ep.episode || ep.number || 0;
+      return num >= start && num <= end;
+    });
   };
 
   useEffect(() => {
@@ -517,6 +579,36 @@ const RecommendationsPage = () => {
             seasonData={selectedAnimeInfo.seasonData}
             title={selectedAnimeInfo.title ? `${selectedAnimeInfo.title} — Seasons` : undefined}
           />
+          {/* Episodes for the selected anime and season */}
+          {episodesForSeason().length > 0 && (
+            <div className="episodes-section">
+              <h2 className="section-title">{(SEASONS.find(s => s.key === season)?.label || 'Season')} Episodes</h2>
+              <div className="ep-grid">
+                {episodesForSeason().map((ep, idx) => {
+                  const epNum = ep.episode || ep.number || idx + 1;
+                  const epTitle = ep.title || ep.title_romanji || ep.title_japanese || 'Untitled';
+                  const makeQuery = (t, n) => `${t || ''} episode ${n || ''}`.trim();
+                  const crunchyLink = (t, n) => `https://www.crunchyroll.com/search?q=${encodeURIComponent(makeQuery(t, n))}`;
+                  const ytLink = (t, n) => `https://www.youtube.com/results?search_query=${encodeURIComponent(makeQuery(t, n))}`;
+                  return (
+                    <div key={ep.mal_id || epNum || idx} className="ep-card" role="listitem" aria-label={`Episode ${epNum}: ${epTitle}`}>
+                      <div className="thumb" aria-hidden>
+                        <div className="bg" />
+                        <div className="overlay">
+                          <div className="badge">Ep {epNum}</div>
+                          <div className="ep-title">{epTitle}</div>
+                        </div>
+                      </div>
+                      <div className="card-actions">
+                        <a href={crunchyLink(selectedAnimeInfo.title, epNum)} target="_blank" rel="noreferrer noopener" className="watch">Crunchyroll</a>
+                        <a href={ytLink(selectedAnimeInfo.title, epNum)} target="_blank" rel="noreferrer noopener" className="watch">YouTube</a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="recommendation-section">
             <h2 className="section-title">{(SEASONS.find(s => s.key === season)?.label || 'Season')} Picks</h2>
             {loading && <div className="loading-small" role="status">Loading...</div>}
@@ -533,7 +625,7 @@ const RecommendationsPage = () => {
                     <h3 className="title">{anime.title}</h3>
                     {anime.genres && <div className="genres">{anime.genres.slice(0,3).join(', ')}</div>}
                     <div className="actions">
-                      <button onClick={() => handleAnimeClick(anime)} className="details-btn">Details</button>
+                      <button onClick={() => handleSelectAnime(anime)} className="details-btn">Details</button>
                     </div>
                   </div>
                 </div>
@@ -556,6 +648,11 @@ const RecommendationsPage = () => {
       <style jsx>{`
   .recommendations-page { min-height:100vh; background:${colors.bgDark}; display:flex; flex-direction:column; }
   .hero-wrap { position:relative; isolation:isolate; z-index:0; contain:content; }
+  /* Ensure hero video/background sits above subsequent content during initial load */
+  .hero-wrap :global(.video-bg) { z-index: 2; }
+  .hero-wrap :global(.hero-content),
+  .hero-wrap :global(.hero-stats),
+  .hero-wrap :global(.hero-bottom-fade) { z-index: 4; }
   .hero-bg { pointer-events:none; filter: saturate(1.1) brightness(1); opacity:0.7; }
   .hero-inner { position:relative; z-index:1; }
   .post-start-wrapper { padding:2rem 0 6rem; background:${colors.bgDark}; opacity:0; transform: translateY(24px); filter: blur(2px); transition: opacity .5s ease, transform .5s ease, filter .5s ease; }
@@ -680,6 +777,24 @@ const RecommendationsPage = () => {
             gap: 1rem;
           }
         }
+      `}</style>
+      <style jsx>{`
+        .episodes-section { max-width:1300px; margin:0 auto; padding:0 2rem 3rem; }
+        .ep-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; }
+        .ep-card { background:#121a29; border:1px solid #28344d; border-radius:12px; overflow:hidden; box-shadow: 0 6px 20px rgba(0,0,0,.25); transition: transform .25s ease, box-shadow .25s ease; }
+        .ep-card:hover { transform: translateY(-4px); box-shadow: 0 10px 26px rgba(0,0,0,.35); }
+        .thumb { position:relative; aspect-ratio:16/9; overflow:hidden; background:#0e141f; }
+        .thumb .bg { position:absolute; inset:0; background-size:cover; background-position:center; filter:brightness(.5) saturate(1.05); transform: scale(1.02); }
+        .thumb .overlay { position:absolute; inset:auto 0 0 0; padding:.75rem; background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,.0)); display:flex; flex-direction:column; gap:.35rem; }
+        .thumb .badge { align-self:flex-start; background:#243249; border:1px solid #2e3d55; color:#cfe7ff; font-weight:700; padding:.15rem .45rem; border-radius:6px; font-size:.8rem; }
+        .thumb .ep-title { font-weight:600; }
+        .card-actions { display:flex; flex-wrap:wrap; gap:.4rem; padding:.6rem .75rem .8rem; }
+        .watch { background:#243249; border:1px solid #2e3d55; border-radius:8px; padding:.3rem .55rem; color:#fff; text-decoration:none; font-size:.8rem; }
+        .watch:hover { background:#2e3d55; }
+      `}</style>
+      {/* dynamic background image for styled-jsx */}
+      <style jsx>{`
+        .thumb .bg { background-image: ${selectedAnimeInfo && selectedAnimeInfo.poster ? `url('${selectedAnimeInfo.poster}')` : 'none'}; }
       `}</style>
     </div>
   );

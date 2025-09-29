@@ -13,9 +13,9 @@ export default function NewsPage() {
     (async () => {
       setLoading(true); setError('');
       try {
-        // Use Jikan Top Anime as placeholder news content (title + images)
-        const { data } = await axios.get('/api/jikan/top?limit=13');
-        const list = data?.anime || [];
+        // Use backend global news aggregator
+        const { data } = await axios.get('/api/news');
+        const list = Array.isArray(data?.articles) ? data.articles : [];
         if (!mounted) return;
         setTop(list[0] || null);
         setArticles(list.slice(1));
@@ -33,22 +33,22 @@ export default function NewsPage() {
       {top && (
         <article className="hero">
           <div className="hero-img">
-            <PosterImage title={top.title} src={top.images?.jpg?.large_image_url || top.images?.jpg?.image_url} alt={top.title} />
+            <PosterImage title={top.title} src={top.thumbnail} alt={top.title} />
           </div>
           <div className="hero-text">
             <h2>{top.title}</h2>
-            {top.synopsis && <p>{top.synopsis}</p>}
-            <a className="cta" href={`/jikan/${top.mal_id}`}>Read More</a>
+            {top.description && <p dangerouslySetInnerHTML={{ __html: top.description }} />}
+            <a className="cta" href={top.link} target="_blank" rel="noreferrer noopener">Read More</a>
           </div>
         </article>
       )}
       <div className="grid">
         {articles.map((a) => (
           <article className="card" key={a.mal_id}>
-            <div className="thumb"><PosterImage title={a.title} src={a.images?.jpg?.image_url} alt={a.title} /></div>
+            <div className="thumb"><PosterImage title={a.title} src={a.thumbnail} alt={a.title} /></div>
             <div className="meta">
               <h3>{a.title}</h3>
-              <a className="read" href={`/jikan/${a.mal_id}`}>Read More</a>
+              <a className="read" href={a.link} target="_blank" rel="noreferrer noopener">Read More</a>
             </div>
           </article>
         ))}

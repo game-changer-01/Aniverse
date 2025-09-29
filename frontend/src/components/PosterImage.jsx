@@ -12,21 +12,31 @@ export default function PosterImage({ title, src, alt, fill = true, sizes = '200
   // Strategy: try Next/Image first; on error, fall back to a plain <img> tag.
   if (url && !errored) {
     return (
-      <Image
-        src={url}
-        alt={alt || title || 'Poster'}
-        fill={fill}
-        sizes={sizes}
-        style={{ objectFit: 'cover', ...(style || {}) }}
-        onError={() => setErrored(true)}
-      />
+      <span className="pi-wrap">
+        <Image
+          src={url}
+          alt={alt || title || 'Poster'}
+          fill={fill}
+          sizes={sizes}
+          style={{ objectFit: 'cover', ...(style || {}) }}
+          // Disable Next.js image optimization to avoid dev-time optimizer fetch errors
+          // that can trigger error overlays and interfere with the hero trailer.
+          unoptimized
+          loading="lazy"
+          decoding="async"
+          onError={() => setErrored(true)}
+        />
+        <style jsx>{`
+          .pi-wrap { position: relative; display: block; width: 100%; height: 100%; }
+        `}</style>
+      </span>
     );
   }
 
   if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={url} alt={alt || title || 'Poster'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => { setErrored(true); setUrl(''); }} />
+      <img src={url} alt={alt || title || 'Poster'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" onError={() => { setErrored(true); setUrl(''); }} />
     );
   }
 

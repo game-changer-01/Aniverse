@@ -44,6 +44,7 @@ app.use('/api/identity', require('./routes/identity'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api/jikan', require('./routes/jikan'));
 app.use('/api/anilist', require('./routes/anilist'));
+app.use('/api/news', require('./routes/news'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

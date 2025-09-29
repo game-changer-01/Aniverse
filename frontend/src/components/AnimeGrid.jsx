@@ -26,18 +26,41 @@ export default function AnimeGrid({ onSelectAnime, pageSize = 24, search = '' })
     (async () => {
       setLoading(true); setError('');
       try {
-        const { data } = await axios.get(`/api/anime?limit=${pageSize}${search ? `&search=${encodeURIComponent(search)}` : ''}`);
-        if (!mounted) return;
-        let list = data?.animes || data?.anime || [];
-        if (!Array.isArray(list)) list = [];
-        // If we have no results and a search term, try Jikan search as fallback
-        if (list.length === 0 && search) {
+        let list = [];
+        if (search && search.trim()) {
+          // Prefer Jikan search as primary source
           try {
             const j = await axios.get(`/api/jikan/search?q=${encodeURIComponent(search)}&limit=${pageSize}`);
-            list = j.data?.anime || [];
+            list = Array.isArray(j.data?.anime) ? j.data.anime : [];
           } catch {}
+          // Fallback to local /api/anime search if needed
+          if (list.length === 0) {
+            try {
+              const { data } = await axios.get(`/api/anime?limit=${pageSize}&search=${encodeURIComponent(search)}`);
+              list = Array.isArray(data?.animes) ? data.animes : (Array.isArray(data?.anime) ? data.anime : []);
+            } catch {}
+          }
+        } else {
+          // Default browse: use Jikan Top list
+          try {
+            const top = await axios.get(`/api/jikan/top?limit=${pageSize}`);
+            list = Array.isArray(top.data?.anime) ? top.data.anime : [];
+          } catch {}
+          // Fallback to local curated list
+          if (list.length === 0) {
+            try {
+              const { data } = await axios.get(`/api/anime?limit=${pageSize}`);
+              list = Array.isArray(data?.animes) ? data.animes : (Array.isArray(data?.anime) ? data.anime : []);
+            } catch {}
+          }
         }
-        setAnimes(list);
+        if (!mounted) return;
+        if (list.length > 0) {
+          setAnimes(list);
+        } else {
+          setError('Unable to load anime list. Showing a small offline selection.');
+          setAnimes(staticFallback);
+        }
       } catch (e) {
         if (!mounted) return;
         setError('Unable to load anime list. Showing a small offline selection.');
@@ -100,10 +123,14 @@ export default function AnimeGrid({ onSelectAnime, pageSize = 24, search = '' })
                 <button className="details" onClick={() => onSelectAnime && onSelectAnime(anime)}>Roadmap</button>
                 <button
                   className="details"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     const malId = anime.mal_id;
-                    if (malId) router.push(`/jikan/${malId}`);
-                    else router.push(`/anime/${anime._id || anime.id}`);
+                    if (malId) {
+                      router.push(`/jikan/${malId}`);
+                    } else {
+                      router.push(`/anime/${anime._id || anime.id}`);
+                    }
                   }}
                 >Details</button>
               </div>
@@ -123,7 +150,7 @@ export default function AnimeGrid({ onSelectAnime, pageSize = 24, search = '' })
         .card { background:#1b2436; border:1px solid #28344d; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; cursor:pointer; transition: transform .2s ease, box-shadow .2s ease; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,.35); }
         .poster { position:relative; aspect-ratio:3/4; background:#0e141f; }
-        .overlay-gradient { position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 65%, rgba(18,24,38,0.95) 100%); opacity:0; transition:opacity .2s ease; }
+  .overlay-gradient { position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(18,24,38,0.85) 100%); opacity:0; transition:opacity .2s ease; will-change: opacity; }
         .card:hover .overlay-gradient { opacity:1; }
         .info { padding:.75rem .8rem 1rem; display:flex; flex-direction:column; gap:.5rem; }
         .title { margin:0; font-size:0.98rem; line-height:1.3; }

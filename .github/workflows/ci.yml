@@ -9,6 +9,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     services:
       mongo:
         image: mongo:7
@@ -57,8 +59,10 @@ jobs:
 
       - name: Smoke test API
         run: |
-          curl -fsS "http://127.0.0.1:${PORT}/api/anime/top-popular?limit=3" | jq . >/dev/null 2>&1 || curl -fsS "http://127.0.0.1:${PORT}/api/anime/top-popular?limit=3"
-          curl -fsS "http://127.0.0.1:${PORT}/api/anime?limit=5&search=One%20Piece" >/dev/null
+          set -e
+          curl -fsS "http://127.0.0.1:${PORT}/api/health" >/dev/null
+          curl -fsS "http://127.0.0.1:${PORT}/api/jikan/top?limit=3" >/dev/null
+          curl -fsS "http://127.0.0.1:${PORT}/api/recommend?limit=1" >/dev/null
 
       - name: Install frontend deps
         working-directory: frontend
