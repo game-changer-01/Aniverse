@@ -59,21 +59,25 @@ export default function AnimeDetailsModal({ open, onClose, anime, episodes, trai
         <button className="close" onClick={onClose} aria-label="Close details">×</button>
       </div>
       <style jsx>{`
-        .modal-overlay { position:fixed; inset:0; background:rgba(5,8,15,0.7); backdrop-filter:blur(6px); display:flex; align-items:flex-start; justify-content:center; padding:4vh 2vw; animation:fadeIn .2s ease; }
-        .modal-card { position:relative; width:min(1100px, 96vw); max-height:92vh; overflow:auto; background:#0f1522; border:1px solid #2e3d55; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.45); animation:slideUp .25s ease; }
+        .modal-overlay { position:fixed; inset:0; background:var(--color-shadow); backdrop-filter:blur(6px); display:flex; align-items:flex-start; justify-content:center; padding:4vh 2vw; animation:fadeIn .2s ease; }
+        .modal-card { position:relative; width:min(1100px, 96vw); max-height:92vh; overflow:auto; background:var(--color-surface); border:1px solid var(--color-border); border-radius:16px; box-shadow:0 20px 60px var(--color-shadow); animation:slideUp .25s ease; color:var(--color-text); }
         .header { display:grid; grid-template-columns:240px 1fr; gap:1rem; padding:1rem; }
-        .poster { aspect-ratio:3/4; background:#0e141f; border-radius:12px; overflow:hidden; border:1px solid #28344d; }
-        .meta h2 { margin:.25rem 0 .5rem; }
-        .genres, .season { opacity:.8; font-size:.9rem; margin:.15rem 0; }
-        .desc { opacity:.9; line-height:1.6; margin-top:.5rem; }
+        .poster { aspect-ratio:3/4; background:var(--color-bg-alt); border-radius:12px; overflow:hidden; border:1px solid var(--color-border); }
+        .meta h2 { margin:.25rem 0 .5rem; color:var(--color-text); background:linear-gradient(45deg, var(--color-accent), var(--color-accent-glow));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+        .genres, .season { opacity:.8; font-size:.9rem; margin:.15rem 0; color:var(--color-text-dim); }
+        .desc { opacity:.9; line-height:1.6; margin-top:.5rem; color:var(--color-text); }
         .trailer { padding:0 1rem 1rem; }
-        .video-wrap { position:relative; width:100%; aspect-ratio:16/9; background:#0b0b0f; border:1px solid #28344d; border-radius:12px; overflow:hidden; }
-        .gradient { position:absolute; inset:auto 0 0 0; height:40%; background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(15,21,34,0.85) 70%, #0f1522 100%); pointer-events:none; }
+        .video-wrap { position:relative; width:100%; aspect-ratio:16/9; background:var(--color-bg); border:1px solid var(--color-border); border-radius:12px; overflow:hidden; }
+        .gradient { position:absolute; inset:auto 0 0 0; height:40%; background:linear-gradient(180deg, transparent 0%, var(--color-shadow) 70%, var(--color-surface) 100%); pointer-events:none; }
         .episodes { padding:0 1rem 1rem; }
+        .episodes h3 { color:var(--color-accent); }
         .ep-list { list-style:none; padding:0; margin:0; display:grid; gap:.5rem; }
-        .ep { display:flex; align-items:center; gap:.6rem; background:#121826; border:1px solid #28344d; border-radius:10px; padding:.5rem .6rem; }
-        .num { background:#243249; border:1px solid #2e3d55; border-radius:6px; padding:.1rem .4rem; font-size:.8rem; }
-        .close { position:sticky; left:calc(100% - 40px); top:10px; background:transparent; color:#fff; border:none; font-size:1.6rem; cursor:pointer; }
+        .ep { display:flex; align-items:center; gap:.6rem; background:var(--color-glass); border:1px solid var(--color-border); border-radius:10px; padding:.5rem .6rem; transition:all .2s; }
+        .ep:hover { border-color:var(--color-accent-glow); }
+        .ep .title { color:var(--color-text); }
+        .num { background:var(--color-accent); border:1px solid var(--color-accent); border-radius:6px; padding:.1rem .4rem; font-size:.8rem; color:var(--color-glass); }
+        .close { position:sticky; left:calc(100% - 40px); top:10px; background:transparent; color:var(--color-text); border:none; font-size:1.6rem; cursor:pointer; transition:color .2s; }
+        .close:hover { color:var(--color-accent); }
         @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
         @keyframes slideUp { from { transform:translateY(8px); opacity:.9 } to { transform:none; opacity:1 } }
         @media (max-width: 760px) { .header { grid-template-columns:1fr; } }

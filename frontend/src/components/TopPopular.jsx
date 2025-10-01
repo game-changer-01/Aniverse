@@ -49,13 +49,55 @@ export default function TopPopular() {
         </div>
       ))}
       <style jsx>{`
-        .top-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1rem; padding:1rem 1.5rem; }
-  .card { background:#1b2436; border:1px solid #28344d; border-radius:12px; overflow:hidden; cursor:pointer; }
-  .card:hover { transform: translateY(-2px); }
-        .poster { aspect-ratio:3/4; background:#0e141f; }
-        .meta { padding:.5rem .6rem .8rem; }
-        .title { font-size:.9rem; margin:0 0 .25rem; }
-        .genres { font-size:.7rem; opacity:.7; }
+        .loading { padding:2rem; text-align:center; color:var(--color-text-dim); }
+        .error { padding:2rem; text-align:center; color:var(--color-accent); }
+        .top-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1.5rem; padding:1rem 1.5rem; }
+        .card { 
+          background:var(--color-surface); 
+          border:1px solid var(--color-border); 
+          border-radius:16px; 
+          overflow:hidden; 
+          cursor:pointer; 
+          transition:all .35s ease;
+          box-shadow:0 6px 20px -6px var(--color-shadow);
+        }
+        .card:hover { 
+          transform:translateY(-6px); 
+          border-color:var(--color-accent-glow);
+          box-shadow:0 12px 30px -6px var(--color-shadow);
+        }
+        .poster { 
+          aspect-ratio:3/4; 
+          background:var(--color-bg-alt); 
+          position:relative;
+          overflow:hidden;
+        }
+        .poster img {
+          width:100%;
+          height:100%;
+          object-fit:cover;
+          transition:transform .35s ease;
+        }
+        .card:hover .poster img {
+          transform:scale(1.05);
+        }
+        .meta { 
+          padding:.9rem .95rem 1.2rem; 
+          color:var(--color-text);
+        }
+        .title { 
+          font-size:1rem; 
+          margin:0 0 .5rem; 
+          color:var(--color-text);
+          line-height:1.3;
+          font-weight:600;
+        }
+        .genres { 
+          font-size:.75rem; 
+          color:var(--color-text-dim);
+          text-transform:uppercase;
+          letter-spacing:.5px;
+        }
       `}</style>
     </div>
   );

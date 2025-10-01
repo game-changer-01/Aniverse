@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
-const UserProfile = () => {
+const UserProfile = ({ collapsed = false }) => {
   const { user, logout, isAuthenticated } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -40,55 +40,48 @@ const UserProfile = () => {
   };
 
   if (!isAuthenticated) {
+    const goLogin = () => router.push('/auth/login');
+    const goSignup = () => router.push('/auth/signup');
     return (
-      <div className="auth-buttons">
-        <Link href="/auth/login" className="login-btn">
-          Sign In
-        </Link>
-        <Link href="/auth/signup" className="signup-btn">
-          Sign Up
-        </Link>
-        <style jsx>{`
-          .auth-buttons {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-          }
-          .login-btn, .signup-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 999px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            text-decoration: none;
-          }
-          .login-btn {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid #2e3d55;
-            color: #fff;
-          }
-          .login-btn:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: #3a4e6d;
-            transform: translateY(-1px);
-          }
-          .signup-btn {
-            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
-            border: 1px solid transparent;
-            color: #fff;
-          }
-          .signup-btn:hover {
-            background: linear-gradient(135deg, #ff5252, #26d0ce);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(78,205,196,0.3);
-          }
+      <div className={`auth-buttons glass-cluster ${collapsed ? 'collapsed' : ''}`} role="group" aria-label="Authentication">
+        <button type="button" onClick={goLogin} className="auth-seg" aria-label="Sign in">
+          <span className="auth-icon" aria-hidden>
+            <span className="material-icons" style={{fontSize: '18px'}}>person</span>
+          </span>
+          <span className="auth-label">Sign In</span>
+        </button>
+        <button type="button" onClick={goSignup} className="auth-seg primary" aria-label="Sign up">
+          <span className="auth-icon" aria-hidden>
+            <span className="material-icons" style={{fontSize: '18px'}}>person_add</span>
+          </span>
+          <span className="auth-label">Sign Up</span>
+        </button>
+          <style jsx>{`
+            .auth-buttons { display:flex; align-items:center; gap:.55rem; padding:.4rem; transition: padding .45s ease; }
+          .auth-buttons.collapsed { padding:.22rem; }
+          .auth-seg { position:relative; display:inline-flex; align-items:center; justify-content:center; gap:.45rem; padding:.55rem 1.05rem; border-radius:22px; font-size:.72rem; font-weight:600; letter-spacing:.8px; color:var(--color-text); background:var(--color-surface); border:1px solid var(--color-border); cursor:pointer; transition: background .45s ease, color .35s ease, transform .35s cubic-bezier(.6,.2,.2,1), box-shadow .45s, border-color .4s; -webkit-tap-highlight-color: transparent; }
+          .auth-seg:hover { background:linear-gradient(45deg, var(--luxury-gold), var(--luxury-rose)); color:var(--color-glass); transform:translateY(-3px); box-shadow:0 12px 30px -12px var(--luxury-gold)40; }
+          .auth-seg:active { transform:translateY(-1px) scale(.97); }
+          .auth-seg:focus-visible { outline:2px solid var(--color-focus); outline-offset:3px; }
+          .auth-seg.primary { background:linear-gradient(145deg, var(--color-accent), var(--color-accent-glow)); color:var(--color-glass); border:1px solid var(--color-accent); box-shadow:0 8px 30px -12px var(--color-accent), 0 0 0 1px var(--color-glass) inset; }
+          .auth-seg.primary:hover { box-shadow:0 12px 42px -12px var(--color-accent), 0 0 0 1px var(--color-glass) inset; }
+          .auth-icon { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; filter:drop-shadow(0 2px 4px var(--color-shadow)); opacity:.9; transition: transform .5s cubic-bezier(.6,.2,.2,1), opacity .4s; }
+          .auth-seg:hover .auth-icon { transform:translateY(-2px) scale(1.12); opacity:1; }
+          .auth-seg.primary .auth-icon { filter:drop-shadow(0 2px 6px var(--color-accent)); }
+          .auth-label { position:relative; top:1px; transition: opacity .4s ease, transform .45s ease; }
+          .auth-buttons.collapsed .auth-label { opacity:0; transform:translateY(-8px); pointer-events:none; width:0; margin:0; }
+          .auth-buttons.collapsed .auth-seg { padding:.18rem .75rem; gap:0; border-radius:16px; }
+          .auth-buttons.collapsed .auth-seg .auth-icon svg { width:17px; height:17px; stroke-width:2; }
+          .auth-buttons.collapsed .auth-seg.primary { box-shadow:0 6px 20px -10px var(--color-accent), 0 0 0 1px var(--color-glass) inset; }
+          .auth-buttons.collapsed .auth-seg { transform:scale(.92); }
+          @media (max-width:760px){ .auth-label{ font-size:.65rem; letter-spacing:.6px; } .auth-seg{ padding:.45rem .75rem; } }
         `}</style>
       </div>
     );
   }
 
   return (
-    <div className="user-profile" ref={dropdownRef}>
+    <div className={`user-profile ${collapsed ? 'collapsed' : ''}`} ref={dropdownRef}>
       <button 
         className="profile-button"
         onClick={() => setShowDropdown(!showDropdown)}
@@ -171,18 +164,18 @@ const UserProfile = () => {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid #2e3d55;
-          color: #fff;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          color: var(--color-text);
           padding: 0.4rem 0.8rem;
           border-radius: 999px;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.4s ease;
           font-size: 0.9rem;
         }
         .profile-button:hover {
-          background: rgba(255,255,255,0.1);
-          border-color: #3a4e6d;
+          background: var(--color-accent-alt);
+          border-color: var(--color-accent);
           transform: translateY(-1px);
         }
         .profile-picture {
@@ -195,20 +188,23 @@ const UserProfile = () => {
           width: 24px;
           height: 24px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+          background: linear-gradient(135deg, var(--color-accent), var(--color-accent-glow));
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 0.7rem;
           font-weight: 600;
-          color: #fff;
+          color: var(--color-glass);
         }
         .profile-name {
           max-width: 120px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          transition: opacity .4s ease, transform .45s ease;
         }
+        .user-profile.collapsed .profile-name { opacity:0; transform:translateY(-8px); width:0; margin:0; pointer-events:none; }
+  .user-profile.collapsed .profile-button { padding:0.3rem 0.55rem; }
         .dropdown-arrow {
           transition: transform 0.2s ease;
           transform: ${showDropdown ? 'rotate(180deg)' : 'rotate(0deg)'};
@@ -217,27 +213,28 @@ const UserProfile = () => {
           position: absolute;
           top: calc(100% + 8px);
           right: 0;
-          background: rgba(36,47,70,0.95);
+          background: var(--color-surface);
           backdrop-filter: blur(10px);
-          border: 1px solid #2e3d55;
+          border: 1px solid var(--color-border);
           border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+          box-shadow: 0 10px 30px var(--color-shadow);
           min-width: 240px;
           z-index: 1000;
           overflow: hidden;
         }
         .dropdown-header {
           padding: 1rem;
-          background: rgba(255,255,255,0.02);
+          background: var(--color-bg-alt);
         }
         .user-info strong {
           display: block;
           font-size: 0.95rem;
           margin-bottom: 0.2rem;
+          color: var(--color-text);
         }
         .user-info .email {
           font-size: 0.8rem;
-          opacity: 0.7;
+          color: var(--color-text-dim);
         }
         .badges {
           margin-top: 0.5rem;
@@ -245,27 +242,31 @@ const UserProfile = () => {
           gap: 0.5rem;
         }
         .badge {
-          background: rgba(255,255,255,0.1);
+          background: var(--color-surface);
           padding: 0.2rem 0.5rem;
           border-radius: 12px;
           font-size: 0.7rem;
           font-weight: 500;
+          border: 1px solid var(--color-border);
         }
         .badge.verified {
-          background: rgba(76, 175, 80, 0.2);
-          color: #4caf50;
+          background: var(--color-accent-glow);
+          color: var(--color-text);
+          border-color: var(--color-accent-glow);
         }
         .badge.unverified {
-          background: rgba(255, 152, 0, 0.2);
-          color: #ff9800;
+          background: var(--color-accent-alt);
+          color: var(--color-text);
+          border-color: var(--color-accent-alt);
         }
         .badge.premium {
-          background: linear-gradient(135deg, rgba(255,193,7,0.2), rgba(255,152,0,0.2));
-          color: #ffc107;
+          background: linear-gradient(135deg, var(--color-accent), var(--color-accent-glow));
+          color: var(--color-glass);
+          border-color: var(--color-accent);
         }
         .dropdown-divider {
           height: 1px;
-          background: #2e3d55;
+          background: var(--color-border);
           margin: 0;
         }
         .dropdown-menu {
@@ -278,23 +279,23 @@ const UserProfile = () => {
           padding: 0.6rem 1rem;
           background: none;
           border: none;
-          color: #fff;
+          color: var(--color-text);
           text-decoration: none;
           font-size: 0.9rem;
           cursor: pointer;
           transition: background 0.2s ease;
         }
         .dropdown-item:hover {
-          background: rgba(255,255,255,0.05);
+          background: var(--color-bg-alt);
         }
         .dropdown-item.premium-action {
-          color: #ffc107;
+          color: var(--color-accent-glow);
         }
         .dropdown-item.logout {
-          color: #ff6b6b;
+          color: var(--color-accent);
         }
         .dropdown-item.logout:hover {
-          background: rgba(255,107,107,0.1);
+          background: var(--color-accent-alt);
         }
 
         @media (max-width: 768px) {
