@@ -4,22 +4,40 @@ import Link from 'next/link';
 export default function AnimeCard({ anime }) {
   return (
     <Link href={`/anime/${anime._id}`}>
-      <a style={{
-        display:'block', width:180, textDecoration:'none', color:'#fff',
-        marginRight:16
-      }}>
-        <div style={{
-          borderRadius:12,
-          overflow:'hidden',
-          boxShadow:'0 8px 20px rgba(0,0,0,0.4)',
-          transition:'transform .2s ease'
-        }}
-          onMouseEnter={e=>e.currentTarget.style.transform='scale(1.05)'}
-          onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
-        >
-          <img src={anime.poster} alt={anime.title} style={{ width:'100%', height:260, objectFit:'cover' }} />
+      <a className="anime-card">
+        <div className="card-image">
+          <img src={anime.poster} alt={anime.title} />
         </div>
-        <p style={{ marginTop:8, fontWeight:600, textAlign:'center' }}>{anime.title}</p>
+        <p className="card-title">{anime.title}</p>
+        <style jsx>{`
+          .anime-card {
+            display: block;
+            width: 180px;
+            text-decoration: none;
+            color: var(--color-text);
+            margin-right: 16px;
+          }
+          .card-image {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px var(--color-shadow);
+            transition: transform .2s ease;
+          }
+          .card-image:hover {
+            transform: scale(1.05);
+          }
+          .card-image img {
+            width: 100%;
+            height: 260px;
+            object-fit: cover;
+          }
+          .card-title {
+            margin-top: 8px;
+            font-weight: 600;
+            text-align: center;
+            color: var(--color-text);
+          }
+        `}</style>
       </a>
     </Link>
   );

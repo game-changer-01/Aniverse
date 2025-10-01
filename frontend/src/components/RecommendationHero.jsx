@@ -135,11 +135,9 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
           <p ref={subtitleRef} className="hero-subtitle">
             {user ? 'AI-powered recommendations based on your unique taste' : 'Let our AI find anime perfectly matched to your preferences'}
           </p>
-          {isLoaded && (
-            <div className="cta-row" role="group" aria-label="Get started options">
-              {showStartCta && <button className="glass-btn primary" onClick={handleGuestStart} aria-label="Continue as guest and see recommendations">Start as Guest</button>}
-              <button className="glass-btn" onClick={handleLogin} aria-label="Log in to personalize recommendations">Log in</button>
-              <button className="glass-btn" onClick={handleSignup} aria-label="Create an account">Sign up</button>
+          {isLoaded && showStartCta && (
+            <div className="cta-row" role="group" aria-label="Guest start option">
+              <button className="glass-btn primary" onClick={handleGuestStart} aria-label="Continue as guest and see recommendations">Start as Guest</button>
             </div>
           )}
         </div>
@@ -162,18 +160,18 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
       <div className="section-break" />
       
       <style jsx>{`
-  .recommendation-hero { position:relative; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; color:#fff; }
+  .recommendation-hero { position:relative; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; color:var(--color-text); }
   .video-bg { position:absolute; inset:0; z-index:2; }
   .bg-video { width:100%; height:100%; object-fit:cover; background:none; }
-  .video-vignette { position:absolute; inset:0; background:linear-gradient(180deg, rgba(10,10,20,0.35) 0%, rgba(10,10,20,0.55) 40%, rgba(10,10,20,0.85) 75%, #0b0b0f 100%); pointer-events:none; }
-  .hero-bottom-fade { position:absolute; left:0; right:0; bottom:-1px; height:160px; background:linear-gradient(180deg, rgba(11,11,15,0) 0%, #0b0b0f 75%); z-index:3; pointer-events:none; }
-  .section-break { height:48px; background:#0b0b0f; }
+  .video-vignette { position:absolute; inset:0; background:linear-gradient(180deg, var(--color-shadow-light) 0%, var(--color-shadow) 40%, var(--color-shadow-heavy) 75%, var(--color-bg) 100%); pointer-events:none; }
+  .hero-bottom-fade { position:absolute; left:0; right:0; bottom:-1px; height:160px; background:linear-gradient(180deg, transparent 0%, var(--color-bg) 75%); z-index:3; pointer-events:none; }
+  .section-break { height:48px; background:var(--color-bg); }
   .hero-content { position:relative; z-index:4; text-align:center; max-width:800px; padding:0 2rem; }
         .hero-title {
           font-size: clamp(2.5rem, 5vw, 4rem);
           font-weight: 700;
           margin-bottom: 1.5rem;
-          background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+          background: linear-gradient(45deg, var(--color-accent), var(--color-accent-glow), var(--color-accent-alt));
           background-size: 300% 300%;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -190,7 +188,7 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
         }
 
         .cta-row { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
-        .glass-btn { position:relative; appearance:none; border:1px solid rgba(255,255,255,0.18); background:radial-gradient(120% 120% at 10% 10%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 60%, rgba(255,255,255,0.03) 100%); color:#fff; padding:0.9rem 1.4rem; border-radius:16px; font-weight:600; letter-spacing:.3px; cursor:pointer; transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+        .glass-btn { position:relative; appearance:none; border:1px solid var(--color-border); background:var(--color-glass); color:var(--color-text); padding:0.9rem 1.4rem; border-radius:16px; font-weight:600; letter-spacing:.3px; cursor:pointer; transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 28px var(--color-shadow); }
         }
         .glass-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 34px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.28); }
         .glass-btn.primary { border-color: rgba(78,205,196,0.5); background: linear-gradient(135deg, rgba(78,205,196,0.35), rgba(69,183,209,0.22)); box-shadow: 0 10px 30px rgba(78,205,196,0.25), inset 0 1px 0 rgba(255,255,255,0.2); }
@@ -212,7 +210,7 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
           display: block;
           font-size: 2rem;
           font-weight: 700;
-          color: #4ecdc4;
+          color: var(--color-accent);
           margin-bottom: 0.5rem;
         }
 

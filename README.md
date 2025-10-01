@@ -51,26 +51,31 @@ aniverse/
 ### Backend Setup
 
 1. Navigate to the backend directory:
+
    ```powershell
    Set-Location -Path .\backend
    ```
 
 2. Install dependencies:
+
    ```powershell
    npm install
    ```
 
 3. Create environment file:
+
    ```powershell
    Copy-Item .env.example .env
    ```
 
 4. Update `.env` with your configuration:
+
    - MongoDB connection string
    - JWT secret key
    - Cloudflare R2 credentials (if using)
 
 5. Seed the database:
+
    ```powershell
    npm run seed
    ```
@@ -85,16 +90,19 @@ The backend will be running at `http://localhost:5000`
 ### Frontend Setup
 
 1. Navigate to the frontend directory:
+
    ```powershell
    Set-Location -Path ..\frontend
    ```
 
 2. Install dependencies:
+
    ```powershell
    npm install
    ```
 
 3. Create environment file:
+
    ```powershell
    Copy-Item .env.example .env.local
    ```
@@ -115,12 +123,12 @@ The frontend will be running at `http://localhost:3000`
 This repo ships with GitHub Actions workflows:
 
 - `ci.yml` (Continuous Integration):
-   - Spins up MongoDB
-   - Installs backend, seeds DB, boots API, runs smoke tests
-   - Installs and builds the Next.js frontend (points to the local API)
+  - Spins up MongoDB
+  - Installs backend, seeds DB, boots API, runs smoke tests
+  - Installs and builds the Next.js frontend (points to the local API)
 - `deploy.yml` (Deployment):
-   - Frontend: Deploys to Vercel (requires `VERCEL_TOKEN`)
-   - Backend: Triggers a Render deploy (requires `RENDER_SERVICE_ID`, `RENDER_API_KEY`)
+  - Frontend: Deploys to Vercel (requires `VERCEL_TOKEN`)
+  - Backend: Triggers a Render deploy (requires `RENDER_SERVICE_ID`, `RENDER_API_KEY`)
 
 ### Required Secrets
 
@@ -129,11 +137,12 @@ Add these secrets to your GitHub repository:
 - `VERCEL_TOKEN`: Your Vercel deployment token
 - `RENDER_SERVICE_ID`: Your Render service ID
 - `RENDER_API_KEY`: Your Render API key
- - (Optional) `NEXT_PUBLIC_API_URL`: If you want to build the frontend against a specific API URL in CI
+- (Optional) `NEXT_PUBLIC_API_URL`: If you want to build the frontend against a specific API URL in CI
 
 ### Manual Deployment
 
 #### Frontend (Vercel)
+
 ```bash
 cd frontend
 npm run build
@@ -141,18 +150,22 @@ vercel --prod
 ```
 
 #### Backend (Render)
+
 Connect your GitHub repository to Render and configure:
+
 - Build Command: `cd backend && npm install`
 - Start Command: `cd backend && npm start`
 
 ## 📊 API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login
 - `GET /api/auth/me` - Get current user
 
 ### Anime
+
 - `GET /api/anime` - Get all anime (with pagination)
 - `GET /api/anime/featured` - Get featured anime
 - `GET /api/anime/trending` - Get trending anime
@@ -160,9 +173,11 @@ Connect your GitHub repository to Render and configure:
 - `GET /api/anime/:id/episodes` - Get anime episodes
 
 ### Streaming
+
 - `GET /api/stream/:animeId/episode/:episodeNum` - Get stream URL
 
 ### Recommendations
+
 - `GET /api/recommend` - Get personalized recommendations
 
 ## 🛡️ Security Features
@@ -176,10 +191,12 @@ Connect your GitHub repository to Render and configure:
 ## 🎨 Frontend Components
 
 ### Core Components
+
 - `AnimeCard`: Displays anime with poster and title
 - `AnimeRow`: Horizontal scrollable row of anime cards
 
 ### Styling
+
 - Dark theme optimized for media consumption
 - Smooth hover animations
 - Responsive design for all screen sizes
@@ -188,6 +205,7 @@ Connect your GitHub repository to Render and configure:
 ## 📱 Mobile Support
 
 The application is fully responsive and optimized for:
+
 - Mobile phones (375px+)
 - Tablets (768px+)
 - Desktop (1024px+)

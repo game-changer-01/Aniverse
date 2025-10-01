@@ -15,6 +15,11 @@ export default function LoginPage() {
   const [dbStatus, setDbStatus] = useState('unknown');
   const [dbNotice, setDbNotice] = useState('');
 
+// Custom layout to remove taskbar
+LoginPage.getLayout = function getLayout(page) {
+  return page;
+};
+
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -102,15 +107,25 @@ export default function LoginPage() {
   }, []);
 
   return (
-    <div className="auth-page">
-      <form onSubmit={onSubmit} className="auth-card" noValidate>
-        <h1>Welcome back</h1>
+    <>
+      <div className="auth-page">
+        <div className="auth-container">
+          <div className="brand-section">
+            <h1 className="brand-title">AnimeVerse</h1>
+            <p className="brand-subtitle">Discover your next favorite anime</p>
+          </div>
+          <form onSubmit={onSubmit} className="auth-card" noValidate>
+            <h2>Welcome back</h2>
         {dbNotice && <div className="notice" role="status">{dbNotice}</div>}
         {error && <div className="err" role="alert">{error}</div>}
         {gisReady && (
           <div className="oauth">
-            <div id="google-btn-visible" />
-            <div className="or">or</div>
+            <div className="google-signin">
+              <div id="google-btn-visible" />
+            </div>
+            <div className="divider">
+              <span>or continue with email</span>
+            </div>
           </div>
         )}
         <label>
@@ -122,22 +137,59 @@ export default function LoginPage() {
           <input value={password} onChange={e=>{ setPassword(e.target.value); if(error) setError(''); }} type="password" required minLength={6} autoComplete="current-password" placeholder="••••••" />
         </label>
         <button disabled={loading} type="submit">{loading ? 'Signing in…' : 'Sign in'}</button>
-        <p className="alt">No account? <Link href="/auth/signup">Sign up</Link></p>
-      </form>
-      <style jsx>{`
-        .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0b0f;padding:2rem}
-        .auth-card{width:100%;max-width:420px;background:rgba(36,47,70,0.6);backdrop-filter:blur(10px);border:1px solid #2e3d55;border-radius:16px;padding:1.5rem;box-shadow:0 10px 30px rgba(0,0,0,.45);color:#fff}
-        h1{margin:0 0 1rem;font-size:1.5rem}
-        .notice{background:#26354a;border:1px solid #385477;padding:.5rem;border-radius:8px;margin-bottom:.5rem;opacity:.9}
-        .oauth{display:flex;flex-direction:column;gap:.75rem;margin:.5rem 0 1rem}
-  #google-btn-visible :global(div[role="button"]){ width:100% !important; justify-content:center }
-        .or{opacity:.6;text-align:center;font-size:.8rem}
-        label{display:flex;flex-direction:column;gap:.35rem;margin:.6rem 0}
-        input{background:#121826;border:1px solid #2e3d55;color:#fff;border-radius:10px;padding:.7rem}
-        button{margin-top:1rem;width:100%;background:linear-gradient(45deg,#ff6b6b,#4ecdc4);border:none;color:#fff;padding:.8rem;border-radius:12px;font-weight:600;cursor:pointer}
-        .err{background:#40222a;border:1px solid #7a2d3a;padding:.5rem;border-radius:8px;margin-bottom:.5rem}
-        .alt{margin-top:.75rem;opacity:.8}
-      `}</style>
+            <div className="auth-link-card">
+              <span className="link-text">No account?</span>
+              <Link href="/auth/signup" className="signup-link">
+                <span className="link-content">
+                  <span className="link-icon">✨</span>
+                  <span>Join the adventure</span>
+                </span>
+              </Link>
+            </div>
+        </form>
+      </div>
     </div>
+    <style jsx>{`
+        .auth-page{min-height:100vh;background:linear-gradient(135deg, var(--color-bg), var(--color-bg-alt));display:flex;align-items:center;justify-content:center;padding:2rem}
+        .auth-container{display:grid;grid-template-columns:1fr 1fr;gap:4rem;max-width:1000px;width:100%;align-items:center}
+        .brand-section{text-align:center}
+        .brand-title{font-family:'Japan Ramen',serif;font-size:3.5rem;margin:0 0 1rem;background:linear-gradient(45deg, var(--luxury-gold), var(--luxury-rose));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 4px 8px var(--color-shadow))}
+        .brand-subtitle{font-size:1.2rem;color:var(--color-text-dim);margin:0;opacity:0.9}
+        .auth-card{width:100%;max-width:420px;background:var(--color-glass);backdrop-filter:blur(10px);border:1px solid var(--color-border);border-radius:20px;padding:2rem;box-shadow:0 20px 40px var(--color-shadow);color:var(--color-text)}
+        h2{margin:0 0 1.5rem;font-size:1.8rem;color:var(--color-text);background:linear-gradient(45deg, var(--color-accent), var(--color-accent-glow));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
+        .notice{background:var(--color-surface);border:1px solid var(--color-border);padding:.5rem;border-radius:8px;margin-bottom:.5rem;opacity:.9;color:var(--color-text-dim)}
+        .oauth{margin-bottom:1.5rem}
+        .google-signin{margin-bottom:1rem}
+        #google-btn-visible{display:flex;justify-content:center}
+        #google-btn-visible :global(div[role="button"]){width:100% !important;justify-content:center;border-radius:12px !important;height:48px !important;font-size:16px !important}
+        .divider{position:relative;text-align:center;margin:1.5rem 0;color:var(--color-text-dim);font-size:.85rem}
+        .divider::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:linear-gradient(90deg, transparent, var(--color-border), transparent)}
+        .divider span{background:var(--color-glass);padding:0 1rem;position:relative}
+        label{display:flex;flex-direction:column;gap:.35rem;margin:.6rem 0}
+        label span{color:var(--color-text);font-size:.9rem}
+        input{background:var(--color-surface);border:1px solid var(--color-border);color:var(--color-text);border-radius:10px;padding:.7rem;transition:border-color .2s}
+        input:focus{border-color:var(--color-accent);outline:none}
+        input::placeholder{color:var(--color-text-dim)}
+        button{margin-top:1rem;width:100%;background:linear-gradient(45deg,var(--color-accent),var(--color-accent-glow));border:none;color:var(--color-glass);padding:.8rem;border-radius:12px;font-weight:600;cursor:pointer;transition:all .2s}
+        button:hover{background:linear-gradient(45deg,var(--color-accent-alt),var(--color-accent))}
+        button:disabled{opacity:.5;cursor:not-allowed}
+        .err{background:var(--color-surface);border:1px solid var(--color-accent);padding:.5rem;border-radius:8px;margin-bottom:.5rem;color:var(--color-accent)}
+        .alt{margin-top:1.5rem;text-align:center;font-size:.95rem;color:var(--color-text-dim)}
+        .alt a{color:var(--luxury-gold);text-decoration:none;font-weight:600;transition:all .2s ease;background:linear-gradient(45deg, var(--luxury-gold), var(--luxury-rose));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .alt a:hover{transform:translateY(-1px);filter:brightness(1.2);text-decoration:underline}
+        .auth-link-card{margin-top:1.5rem;background:linear-gradient(135deg, var(--color-surface), var(--color-glass));border:1px solid var(--color-border);border-radius:16px;padding:1.2rem;text-align:center;backdrop-filter:blur(10px);box-shadow:0 8px 25px -8px var(--color-shadow)}
+        .link-text{display:block;color:var(--color-text-dim);font-size:0.9rem;margin-bottom:0.8rem}
+        .signup-link{display:inline-block;text-decoration:none;background:linear-gradient(45deg, var(--luxury-gold), var(--luxury-rose), var(--luxury-gold));background-size:200% 200%;padding:0.8rem 1.8rem;border-radius:12px;color:var(--color-glass);font-weight:600;font-size:0.95rem;transition:all 0.3s ease;animation:subtleShimmer 3s ease-in-out infinite;box-shadow:0 4px 15px -5px var(--luxury-gold)40}
+        .signup-link:hover{transform:translateY(-2px);box-shadow:0 6px 20px -3px var(--luxury-gold)60;animation-duration:1.5s}
+        .link-content{display:flex;align-items:center;gap:0.5rem;justify-content:center}
+        .link-icon{font-size:1.1rem;opacity:0.9}
+        @keyframes subtleShimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        @media (max-width: 768px) {
+          .auth-container{grid-template-columns:1fr;gap:2rem;text-align:center}
+          .brand-title{font-size:2.5rem}
+          .auth-card{padding:1.5rem}
+        }
+      `}</style>
+    </>
   );
 }

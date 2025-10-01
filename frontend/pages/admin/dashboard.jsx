@@ -216,9 +216,9 @@ const AdminDashboard = () => {
           padding: 2rem;
           max-width: 1200px;
           margin: 0 auto;
-          background: #0b0b0f;
+          background: var(--color-bg);
           min-height: 100vh;
-          color: #fff;
+          color: var(--color-text);
         }
         .dashboard-header {
           text-align: center;
@@ -227,12 +227,12 @@ const AdminDashboard = () => {
         .dashboard-header h1 {
           font-size: 2.5rem;
           margin-bottom: 0.5rem;
-          background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+          background: linear-gradient(45deg, var(--color-accent), var(--color-accent-glow));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
         .dashboard-header p {
-          color: #666;
+          color: var(--color-text-dim);
           font-size: 1.1rem;
         }
         .stats-grid {
@@ -242,15 +242,15 @@ const AdminDashboard = () => {
           margin-bottom: 3rem;
         }
         .stat-card {
-          background: rgba(36,47,70,0.6);
-          border: 1px solid #2e3d55;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
           border-radius: 12px;
           padding: 1.5rem;
           text-align: center;
         }
         .stat-card h3 {
           margin: 0 0 1rem 0;
-          color: #4ecdc4;
+          color: var(--color-accent);
           font-size: 0.9rem;
           text-transform: uppercase;
           letter-spacing: 1px;
@@ -258,7 +258,7 @@ const AdminDashboard = () => {
         .stat-number {
           font-size: 2.5rem;
           font-weight: bold;
-          color: #fff;
+          color: var(--color-text);
         }
         .tab-navigation {
           display: flex;
@@ -266,31 +266,33 @@ const AdminDashboard = () => {
           margin-bottom: 2rem;
         }
         .tab {
-          background: rgba(255,255,255,0.06);
-          border: 1px solid #2e3d55;
-          color: #fff;
+          background: var(--color-glass);
+          border: 1px solid var(--color-border);
+          color: var(--color-text);
           padding: 0.8rem 1.5rem;
           border-radius: 8px;
           cursor: pointer;
           transition: all 0.2s ease;
         }
         .tab:hover {
-          background: rgba(255,255,255,0.1);
+          background: var(--color-accent-glow);
+          border-color: var(--color-accent);
         }
         .tab.active {
-          background: linear-gradient(135deg, #4ecdc4, #45b7d1);
-          border-color: #4ecdc4;
+          background: linear-gradient(135deg, var(--color-accent), var(--color-accent-glow));
+          border-color: var(--color-accent);
+          color: var(--color-glass);
         }
         .users-section h2 {
           margin-bottom: 1.5rem;
-          color: #4ecdc4;
+          color: var(--color-accent);
         }
         .empty-state {
           text-align: center;
           padding: 3rem;
-          background: rgba(36,47,70,0.3);
+          background: var(--color-surface);
           border-radius: 12px;
-          color: #666;
+          color: var(--color-text-dim);
         }
         .users-grid {
           display: grid;
@@ -298,8 +300,8 @@ const AdminDashboard = () => {
           gap: 1.5rem;
         }
         .user-card {
-          background: rgba(36,47,70,0.6);
-          border: 1px solid #2e3d55;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
           border-radius: 12px;
           padding: 1.5rem;
           display: flex;
@@ -307,8 +309,8 @@ const AdminDashboard = () => {
           gap: 1rem;
         }
         .user-card.pending {
-          border-color: #ff9800;
-          background: rgba(255,152,0,0.05);
+          border-color: var(--color-accent);
+          background: var(--color-accent-glow);
         }
         .user-avatar {
           align-self: center;
@@ -323,11 +325,11 @@ const AdminDashboard = () => {
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+          background: linear-gradient(135deg, var(--color-accent), var(--color-accent-glow));
           display: flex;
           align-items: center;
           justify-content: center;
-          color: white;
+          color: var(--color-glass);
           font-weight: bold;
           font-size: 1.5rem;
         }
@@ -336,15 +338,15 @@ const AdminDashboard = () => {
         }
         .user-info h3 {
           margin: 0 0 0.5rem 0;
-          color: #fff;
+          color: var(--color-text);
         }
         .email {
-          color: #666;
+          color: var(--color-text-dim);
           font-size: 0.9rem;
           margin: 0 0 0.5rem 0;
         }
         .join-date {
-          color: #888;
+          color: var(--color-text-dim);
           font-size: 0.8rem;
           margin: 0;
         }
@@ -362,22 +364,22 @@ const AdminDashboard = () => {
           transition: all 0.2s ease;
         }
         .verify-btn, .toggle-btn.verify {
-          background: linear-gradient(135deg, #4caf50, #2e7d32);
-          color: white;
+          background: linear-gradient(135deg, var(--color-accent), var(--color-accent-glow));
+          color: var(--color-glass);
         }
         .verify-btn:hover, .toggle-btn.verify:hover {
-          background: linear-gradient(135deg, #45a049, #1b5e20);
+          background: linear-gradient(135deg, var(--color-accent-alt), var(--color-accent));
         }
         .reject-btn, .toggle-btn.unverify {
-          background: linear-gradient(135deg, #f44336, #c62828);
-          color: white;
+          background: linear-gradient(135deg, var(--color-accent), var(--color-accent-alt));
+          color: var(--color-glass);
         }
         .reject-btn:hover, .toggle-btn.unverify:hover {
-          background: linear-gradient(135deg, #d32f2f, #b71c1c);
+          background: linear-gradient(135deg, var(--color-accent-alt), var(--color-accent-glow));
         }
         .users-table {
-          background: rgba(36,47,70,0.6);
-          border: 1px solid #2e3d55;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
           border-radius: 12px;
           overflow: hidden;
         }
@@ -388,11 +390,11 @@ const AdminDashboard = () => {
         th, td {
           padding: 1rem;
           text-align: left;
-          border-bottom: 1px solid #2e3d55;
+          border-bottom: 1px solid var(--color-border);
         }
         th {
-          background: rgba(255,255,255,0.05);
-          color: #4ecdc4;
+          background: var(--color-glass);
+          color: var(--color-accent);
           font-weight: 600;
           text-transform: uppercase;
           font-size: 0.8rem;
@@ -413,11 +415,11 @@ const AdminDashboard = () => {
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+          background: linear-gradient(135deg, var(--color-accent), var(--color-accent-glow));
           display: flex;
           align-items: center;
           justify-content: center;
-          color: white;
+          color: var(--color-glass);
           font-weight: bold;
           font-size: 0.9rem;
         }
@@ -433,24 +435,30 @@ const AdminDashboard = () => {
           font-weight: 500;
         }
         .badge.verified {
-          background: rgba(76, 175, 80, 0.2);
-          color: #4caf50;
+          background: var(--color-accent-glow);
+          color: var(--color-accent);
         }
         .badge.unverified {
-          background: rgba(255, 152, 0, 0.2);
-          color: #ff9800;
+          background: var(--color-surface);
+          color: var(--color-text-dim);
+          border: 1px solid var(--color-border);
         }
         .badge.premium {
-          background: linear-gradient(135deg, rgba(255,193,7,0.2), rgba(255,152,0,0.2));
-          color: #ffc107;
+          background: linear-gradient(135deg, var(--color-accent), var(--color-accent-glow));
+          color: var(--color-glass);
         }
         .error-message {
-          background: rgba(244, 67, 54, 0.1);
-          border: 1px solid #f44336;
-          color: #f44336;
+          background: var(--color-surface);
+          border: 1px solid var(--color-accent);
+          color: var(--color-accent);
           padding: 1rem;
           border-radius: 8px;
           margin-bottom: 2rem;
+        }
+        .loading {
+          text-align: center;
+          padding: 4rem;
+          color: var(--color-text-dim);
         }
       `}</style>
     </div>
