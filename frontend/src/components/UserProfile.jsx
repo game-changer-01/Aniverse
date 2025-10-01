@@ -32,11 +32,33 @@ const UserProfile = ({ collapsed = false }) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const getRandomAnimeAvatar = () => {
+    // Array of anime character avatar URLs (using reliable sources)
+    const animeAvatars = [
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime1&backgroundColor=b6e3f4&clothesColor=0a4c9b&eyeType=happy&hairColor=724133&mouthType=smile',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime2&backgroundColor=c0aede&clothesColor=94d82d&eyeType=wink&hairColor=f59e0b&mouthType=tongue',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime3&backgroundColor=ffd93d&clothesColor=e11d48&eyeType=surprised&hairColor=06b6d4&mouthType=smile',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime4&backgroundColor=fed7aa&clothesColor=7c3aed&eyeType=default&hairColor=ec4899&mouthType=default',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime5&backgroundColor=bbf7d0&clothesColor=dc2626&eyeType=hearts&hairColor=1e40af&mouthType=twinkle',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime6&backgroundColor=fde68a&clothesColor=059669&eyeType=squint&hairColor=7c2d12&mouthType=serious',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime7&backgroundColor=ddd6fe&clothesColor=ea580c&eyeType=side&hairColor=0891b2&mouthType=vomit',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime8&backgroundColor=fed7d7&clothesColor=16a34a&eyeType=dizzy&hairColor=a21caf&mouthType=eating',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime9&backgroundColor=bfdbfe&clothesColor=b45309&eyeType=cry&hairColor=dc2626&mouthType=disbelief',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=anime10&backgroundColor=f3e8ff&clothesColor=0d9488&eyeType=close&hairColor=facc15&mouthType=grimace'
+    ];
+
+    // Use user ID or email as seed for consistent avatar per user
+    const seed = user?.id || user?.email || 'default';
+    const index = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % animeAvatars.length;
+    return animeAvatars[index];
+  };
+
   const getProfilePicture = () => {
     // If user has Google profile picture, use it
     if (user?.picture) return user.picture;
     if (user?.avatar) return user.avatar;
-    return null;
+    // Return random anime avatar for logged-in users
+    return getRandomAnimeAvatar();
   };
 
   if (!isAuthenticated) {
@@ -59,7 +81,7 @@ const UserProfile = ({ collapsed = false }) => {
           <style jsx>{`
             .auth-buttons { display:flex; align-items:center; gap:.55rem; padding:.4rem; transition: padding .45s ease; }
           .auth-buttons.collapsed { padding:.22rem; }
-          .auth-seg { position:relative; display:inline-flex; align-items:center; justify-content:center; gap:.45rem; padding:.55rem 1.05rem; border-radius:22px; font-size:.72rem; font-weight:600; letter-spacing:.8px; color:var(--color-text); background:var(--color-surface); border:1px solid var(--color-border); cursor:pointer; transition: background .45s ease, color .35s ease, transform .35s cubic-bezier(.6,.2,.2,1), box-shadow .45s, border-color .4s; -webkit-tap-highlight-color: transparent; }
+          .auth-seg { position:relative; z-index: 3; display:inline-flex; align-items:center; justify-content:center; gap:.45rem; padding:.55rem 1.05rem; border-radius:22px; font-size:.72rem; font-weight:600; letter-spacing:.8px; color:var(--color-text); background:var(--color-surface); border:1px solid var(--color-border); cursor:pointer; transition: background .45s ease, color .35s ease, transform .35s cubic-bezier(.6,.2,.2,1), box-shadow .45s, border-color .4s; -webkit-tap-highlight-color: transparent; }
           .auth-seg:hover { background:linear-gradient(45deg, var(--luxury-gold), var(--luxury-rose)); color:var(--color-glass); transform:translateY(-3px); box-shadow:0 12px 30px -12px var(--luxury-gold)40; }
           .auth-seg:active { transform:translateY(-1px) scale(.97); }
           .auth-seg:focus-visible { outline:2px solid var(--color-focus); outline-offset:3px; }
@@ -88,17 +110,20 @@ const UserProfile = ({ collapsed = false }) => {
         aria-expanded={showDropdown}
         aria-haspopup="true"
       >
-        {getProfilePicture() ? (
+        <div 
+          className="profile-picture-container"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push('/dashboard/user');
+          }}
+          title="Go to My Dashboard"
+        >
           <img 
             src={getProfilePicture()} 
             alt={`${user.username}'s profile`}
             className="profile-picture"
           />
-        ) : (
-          <div className="profile-avatar">
-            {getInitials(user.username || user.email)}
-          </div>
-        )}
+        </div>
         <span className="profile-name">{user.username || user.email?.split('@')[0]}</span>
         <svg className="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
           <path d="M6 8.5L2.5 5h7L6 8.5z"/>
@@ -132,6 +157,14 @@ const UserProfile = ({ collapsed = false }) => {
           </div>
           <div className="dropdown-divider"></div>
           <div className="dropdown-menu">
+            <Link href="/dashboard/user" className="dropdown-item">
+              <span>My Dashboard</span>
+            </Link>
+            {user.isAdmin && (
+              <Link href="/dashboard/admin" className="dropdown-item admin-item">
+                <span>Admin Dashboard</span>
+              </Link>
+            )}
             <Link href="/profile" className="dropdown-item">
               <span>Profile Settings</span>
             </Link>
@@ -172,17 +205,36 @@ const UserProfile = ({ collapsed = false }) => {
           cursor: pointer;
           transition: all 0.4s ease;
           font-size: 0.9rem;
+          position: relative;
+          z-index: 3;
         }
         .profile-button:hover {
           background: var(--color-accent-alt);
           border-color: var(--color-accent);
           transform: translateY(-1px);
         }
+        .profile-picture-container {
+          position: relative;
+          cursor: pointer;
+          border-radius: 50%;
+          transition: all 0.3s ease;
+          padding: 2px;
+          background: linear-gradient(135deg, rgba(255, 215, 0, 0.6), rgba(255, 165, 0, 0.8));
+        }
+        .profile-picture-container:hover {
+          transform: scale(1.1);
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 0 40px rgba(255, 165, 0, 0.4);
+          background: linear-gradient(135deg, rgba(255, 215, 0, 0.8), rgba(255, 165, 0, 1));
+        }
+        .profile-picture-container:active {
+          transform: scale(1.05);
+        }
         .profile-picture {
           width: 24px;
           height: 24px;
           border-radius: 50%;
           object-fit: cover;
+          display: block;
         }
         .profile-avatar {
           width: 24px;
@@ -290,6 +342,13 @@ const UserProfile = ({ collapsed = false }) => {
         }
         .dropdown-item.premium-action {
           color: var(--color-accent-glow);
+        }
+        .dropdown-item.admin-item {
+          color: var(--color-accent);
+          font-weight: 600;
+        }
+        .dropdown-item.admin-item:hover {
+          background: var(--color-accent-alt);
         }
         .dropdown-item.logout {
           color: var(--color-accent);

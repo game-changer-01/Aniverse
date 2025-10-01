@@ -7,6 +7,7 @@ import RecommendationHero from '../src/components/RecommendationHero';
 import ThreeBackground from '../src/components/ThreeBackground';
 import AnimeGrid from '../src/components/AnimeGrid';
 import TopPopular from '../src/components/TopPopular';
+import ReviewSystem from '../src/components/ReviewSystem';
 import SeasonRoadmap, { SEASONS } from '../src/components/SeasonRoadmap';
 const DynamicTimeline = dynamic(() => import('../src/components/RecommendationTimeline'), { ssr:false, loading: () => <div style={{padding:'4rem', textAlign:'center'}}>Preparing timeline...</div> });
 import axios from 'axios';
@@ -603,6 +604,12 @@ const RecommendationsPage = () => {
               )}
             </div>
           )}
+          
+          {/* Main roadmap heading */}
+          <div className="roadmap-main-heading">
+            <h2>Roadmap to Your Anime</h2>
+          </div>
+          
           <SeasonRoadmap
             activeSeason={season}
             onSelect={handleSeasonChange}
@@ -733,6 +740,16 @@ const RecommendationsPage = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+          
+          {/* Review System */}
+          {selectedAnimeInfo.title && selectedAnimeInfo.malId && (
+            <div className="recommendation-section">
+              <ReviewSystem 
+                animeId={selectedAnimeInfo.malId} 
+                animeTitle={selectedAnimeInfo.title}
+              />
             </div>
           )}
         </div>
@@ -902,6 +919,25 @@ const RecommendationsPage = () => {
   .profile-pill .badge.premium { background:var(--color-accent); border-color:var(--color-accent); color:var(--color-glass); }
   .profile-pill .mini { margin-left:.4rem; font-size:.7rem; background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text); padding:.25rem .5rem; border-radius:8px; cursor:pointer; }
 
+        .roadmap-main-heading {
+          max-width: 1300px;
+          margin: 2rem auto 1rem;
+          padding: 0 2rem;
+          text-align: center;
+        }
+
+        .roadmap-main-heading h2 {
+          font-size: 2.5rem;
+          margin: 0 0 1.5rem 0;
+          background: linear-gradient(45deg, var(--color-accent), var(--color-accent-glow));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          font-weight: 700;
+        }
+
         @media (max-width: 768px) {
           .algorithm-options {
             grid-template-columns: 1fr;
@@ -911,6 +947,10 @@ const RecommendationsPage = () => {
             flex-direction: column;
             text-align: center;
             gap: 1rem;
+          }
+
+          .roadmap-main-heading h2 {
+            font-size: 1.8rem;
           }
         }
       `}</style>
@@ -933,12 +973,56 @@ const RecommendationsPage = () => {
         .watch.platform.disney { border-color:var(--color-accent-glow); }
         .watch.platform.jiocinema { border-color:var(--color-accent); }
         .watch.platform.youtube { border-color:var(--color-accent); }
-        .start-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; padding:.55rem 1.1rem; min-width:120px; border-radius:14px; color:var(--color-glass); text-decoration:none; font-weight:700; letter-spacing:.5px; backdrop-filter: blur(10px); background: linear-gradient(135deg, var(--color-accent), var(--color-accent-glow)); border:1px solid var(--color-accent); box-shadow: 0 8px 30px var(--color-shadow); overflow:hidden; transition:all .2s; }
-        .start-btn::before { content:''; position:absolute; inset:-2px; background: conic-gradient(from 0deg, var(--color-accent), var(--color-accent-glow), var(--color-accent-alt), var(--color-accent-glow), var(--color-accent)); filter: blur(14px); opacity:.35; z-index:0; }
-        .start-btn::after { content:''; position:absolute; inset:2px; border-radius:12px; background: var(--color-surface); z-index:0; }
-        .start-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 36px var(--color-shadow); }
-        .start-btn:focus-visible { outline: 2px solid var(--color-accent-glow); outline-offset: 2px; }
-        .start-btn > * { position:relative; z-index:1; }
+        .start-btn { 
+          position: relative; 
+          display: inline-flex; 
+          align-items: center; 
+          justify-content: center; 
+          padding: 0.8rem 2rem; 
+          min-width: 120px; 
+          border-radius: 50px; 
+          color: #000000; 
+          text-decoration: none; 
+          font-weight: 700; 
+          letter-spacing: 1px; 
+          text-transform: uppercase;
+          border: none;
+          background: linear-gradient(135deg, #d4af37, #ffd700, #ffed4e); 
+          box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4); 
+          overflow: hidden; 
+          transition: all 0.3s ease; 
+          text-shadow: none;
+        }
+        .start-btn::before { 
+          content: ''; 
+          position: absolute; 
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          transition: left 0.5s ease;
+        }
+        .start-btn::after { 
+          display: none;
+        }
+        .start-btn:hover { 
+          transform: translateY(-2px); 
+          box-shadow: 0 12px 30px rgba(212, 175, 55, 0.6);
+          background: linear-gradient(135deg, #ffd700, #ffed4e, #d4af37);
+          color: #000000;
+        }
+        .start-btn:hover::before {
+          left: 100%;
+        }
+        .start-btn:focus-visible { 
+          outline: 2px solid #ffd700; 
+          outline-offset: 2px; 
+        }
+        .start-btn > * { 
+          position: relative; 
+          z-index: 1; 
+        }
       `}</style>
       {/* dynamic background image for styled-jsx */}
       <style jsx>{`

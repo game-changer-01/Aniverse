@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link'; // retained for any other links (wordmark replaced with button)
 import { useRouter } from 'next/router';
 import UserProfile from './UserProfile';
+import FeedbackButton from './FeedbackButton';
 import { useTheme } from '../contexts/ThemeContext';
 
 const Layout = ({ children }) => {
@@ -219,16 +220,121 @@ const Header = () => {
           backdrop-filter: blur(18px) saturate(180%);
           -webkit-backdrop-filter: blur(18px) saturate(180%);
           box-shadow: 0 4px 22px -6px var(--color-shadow), 0 0 0 1px var(--color-glass) inset, 0 0 0 1px var(--color-border), 0 0 46px -10px var(--color-accent);
-          border:1px solid var(--color-glass-border);
-          overflow:hidden;
-          transition: padding .5s ease, backdrop-filter .55s ease, background .6s ease;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+          overflow: hidden;
+          transition: padding .5s ease, backdrop-filter .55s ease, background .6s ease, box-shadow .8s ease;
         }
-  .site-header.collapsed .glass-nav { padding:0.04rem 0.48rem; backdrop-filter: blur(26px) saturate(210%); -webkit-backdrop-filter: blur(26px) saturate(210%); gap:0.45rem; border-radius:22px; }
-        .glass-nav:before { content:""; position:absolute; inset:0; background:
-            radial-gradient(circle at 22% 25%, var(--color-accent-alt), transparent 60%),
-            radial-gradient(circle at 78% 70%, var(--color-accent-glow), transparent 65%),
-            radial-gradient(circle at 50% 50%, var(--color-accent), transparent 70%);
-          opacity:.2; pointer-events:none; mix-blend-mode:overlay; }
+
+  .glass-nav::before { 
+    content:""; 
+    position:absolute; 
+    inset:-2px; 
+    padding:2px; 
+    background: linear-gradient(45deg, 
+      rgba(255, 215, 0, 0.6), 
+      rgba(255, 223, 0, 0.4), 
+      rgba(255, 165, 0, 0.6), 
+      rgba(255, 215, 0, 0.8), 
+      rgba(255, 223, 0, 0.4), 
+      rgba(255, 215, 0, 0.6)
+    );
+    background-size: 300% 300%;
+    border-radius: inherit; 
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); 
+    mask-composite: xor; 
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); 
+    -webkit-mask-composite: xor;
+    animation: goldenGlow 4s ease-in-out infinite;
+    opacity: 0.8;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Enhanced Golden Smoke Effects */
+  .glass-nav:hover::before {
+    animation: goldenGlow 2s ease-in-out infinite, goldenSmoke 6s ease-in-out infinite;
+  }
+
+  @keyframes goldenSmoke {
+    0%, 100% {
+      background: linear-gradient(45deg, 
+        rgba(255, 215, 0, 0.6), 
+        rgba(255, 223, 0, 0.4), 
+        rgba(255, 165, 0, 0.6), 
+        rgba(255, 215, 0, 0.8)
+      );
+      background-size: 300% 300%;
+      background-position: 0% 50%;
+      filter: blur(0px);
+    }
+    25% {
+      background: linear-gradient(60deg, 
+        rgba(255, 215, 0, 0.8), 
+        rgba(255, 191, 0, 0.6), 
+        rgba(255, 165, 0, 0.7), 
+        rgba(255, 215, 0, 0.9)
+      );
+      background-size: 400% 400%;
+      background-position: 50% 0%;
+      filter: blur(1px);
+    }
+    50% {
+      background: linear-gradient(90deg, 
+        rgba(255, 215, 0, 0.9), 
+        rgba(255, 223, 0, 0.7), 
+        rgba(255, 140, 0, 0.8), 
+        rgba(255, 215, 0, 1)
+      );
+      background-size: 500% 500%;
+      background-position: 100% 50%;
+      filter: blur(2px);
+    }
+    75% {
+      background: linear-gradient(120deg, 
+        rgba(255, 215, 0, 0.7), 
+        rgba(255, 223, 0, 0.5), 
+        rgba(255, 165, 0, 0.8), 
+        rgba(255, 215, 0, 0.6)
+      );
+      background-size: 400% 400%;
+      background-position: 50% 100%;
+      filter: blur(1px);
+    }
+  }
+
+  .glass-nav::after { 
+    content:""; 
+    position:absolute; 
+    inset:0; 
+    background:
+      radial-gradient(circle at 22% 25%, var(--color-accent-alt), transparent 60%),
+      radial-gradient(circle at 78% 70%, var(--color-accent-glow), transparent 65%),
+      radial-gradient(circle at 50% 50%, var(--color-accent), transparent 70%);
+    opacity:.2; 
+    pointer-events:none; 
+    mix-blend-mode:overlay; 
+    border-radius: inherit;
+  }
+
+  @keyframes goldenGlow {
+    0%, 100% {
+      background-position: 0% 50%;
+      opacity: 0.6;
+    }
+    25% {
+      background-position: 50% 0%;
+      opacity: 0.9;
+    }
+    50% {
+      background-position: 100% 50%;
+      opacity: 1;
+    }
+    75% {
+      background-position: 50% 100%;
+      opacity: 0.9;
+    }
+  }
   .nav-group { display:flex; align-items:center; gap:0.65rem; transition: gap .35s ease; }
   .site-header.collapsed .nav-group { gap:0.45rem; }
   .nav-group.middle { flex:1; justify-content:center; }
@@ -258,6 +364,7 @@ const Header = () => {
     animation: gradientShift 4s ease-in-out infinite;
     text-shadow: 0 1px 2px rgba(0,0,0,0.1); 
     position: relative; 
+    z-index: 3;
     transition: all 0.3s ease; 
     border: none; 
     cursor: pointer; 
@@ -271,6 +378,14 @@ const Header = () => {
     transform: translateY(-1px);
     text-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
+  .site-header.collapsed .glass-nav { 
+    padding:0.04rem 0.48rem; 
+    backdrop-filter: blur(26px) saturate(210%); 
+    -webkit-backdrop-filter: blur(26px) saturate(210%); 
+    gap:0.45rem; 
+    border-radius:22px; 
+  }
+
   .site-header.collapsed .wordmark { transform: scale(0.9); letter-spacing: 0.3px; }
   .wordmark:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
   /* Segmented navigation */
@@ -306,11 +421,11 @@ const Header = () => {
   /* Keep search size constant */
   .site-header.collapsed .icon-btn.search-toggle { transform:none; padding:.45rem; } /* unchanged to keep size */
   .site-header.collapsed .icon-btn.search-toggle:hover { transform:translateY(-3px); }
-  .icon-btn { background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text); padding:.45rem; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition: background .25s, transform .18s, border-color .25s; }
+  .icon-btn { background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text); padding:.45rem; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition: background .25s, transform .18s, border-color .25s; position: relative; z-index: 3; }
         .icon-btn:hover { background:linear-gradient(45deg, var(--luxury-gold), var(--luxury-rose)); transform:translateY(-3px); border-color:var(--luxury-gold); }
         .icon-btn.active { background: var(--color-accent); color:var(--color-glass); border-color:var(--color-accent); }
   /* Theme toggle styling */
-  .theme-toggle { padding:.4rem; font-size:0; min-width:auto; border-radius:50%; transition: all .3s ease; }
+  .theme-toggle { padding:.4rem; font-size:0; min-width:auto; border-radius:50%; transition: all .3s ease; position: relative; z-index: 3; }
   .theme-toggle:hover { transform:translateY(-2px) scale(1.05); }
   .theme-toggle svg { transition: transform .4s ease; }
   .theme-toggle:hover svg { transform:rotate(15deg); }
@@ -326,11 +441,35 @@ const Header = () => {
   @keyframes lightSweep { 0% { transform:translateX(-130%) skewX(-18deg); opacity:0; } 8% { opacity:.9; } 16% { transform:translateX(10%) skewX(-18deg); opacity:0; } 100% { transform:translateX(110%) skewX(-18deg); opacity:0; } }
   @keyframes toriiSweep { 0% { opacity:0; transform:rotate(0deg) scale(.9);} 6% { opacity:.65;} 10% { opacity:0;} 100% { opacity:0; transform:rotate(360deg) scale(1);} }
   @keyframes wordmarkSheen { 0%,92%,100% { filter:brightness(1); } 8% { filter:brightness(1.18);} 9% { filter:brightness(1); } }
-  @media (prefers-reduced-motion: reduce) { .wordmark:after, .torii:after { animation:none; display:none; } .wordmark { animation: none; background: linear-gradient(45deg, var(--luxury-gold), var(--luxury-rose)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; } }
+  @media (prefers-reduced-motion: reduce) { 
+    .torii:after, .glass-nav::before { 
+      animation: none; 
+    }
+    .glass-nav::before {
+      opacity: 0.4;
+    }
+    .wordmark { 
+      animation: none; 
+      background: linear-gradient(45deg, var(--luxury-gold), var(--luxury-rose)); 
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent; 
+      background-clip: text; 
+    } 
+  }
         @keyframes twinkle { 0%,100%{ transform: scale(1); filter: drop-shadow(0 0 6px rgba(78,205,196,0.6)) drop-shadow(0 0 10px rgba(69,183,209,0.35)); } 50%{ transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(78,205,196,0.85)) drop-shadow(0 0 16px rgba(69,183,209,0.55)); } }
-        @media (max-width: 1040px){ .wordmark { font-size:1.4rem; } }
-  @media (max-width: 880px){ .segment { min-width:64px; padding:0.34rem 0.5rem 0.34rem; gap:0.4rem; } .segment .label{ display:none; } }
-        @media (max-width: 760px){ .segmented-nav { display:none; } .nav-group.middle { justify-content:flex-end; } .glass-nav { padding:.55rem .85rem; } .nav-group.brand { min-width:auto; } }
+        @media (max-width: 1040px){ 
+          .wordmark { font-size:1.4rem; } 
+        }
+  @media (max-width: 880px){ 
+    .segment { min-width:64px; padding:0.34rem 0.5rem 0.34rem; gap:0.4rem; } 
+    .segment .label{ display:none; } 
+  }
+        @media (max-width: 760px){ 
+          .segmented-nav { display:none; } 
+          .nav-group.middle { justify-content:flex-end; } 
+          .glass-nav { padding:.55rem .85rem; } 
+          .nav-group.brand { min-width:auto; } 
+        }
       `}</style>
     </header>
   );
@@ -339,7 +478,10 @@ const Header = () => {
 const Footer = () => (
   <footer className="site-footer" role="contentinfo">
     <div className="footer-inner">
-  <span>© {new Date().getFullYear()} Guide2Anime</span>
+      <span>© {new Date().getFullYear()} Guide2Anime</span>
+      <div className="footer-center">
+        <FeedbackButton inline={true} />
+      </div>
       <div className="links">
         <a href="#" aria-label="Privacy Policy">Privacy</a>
         <a href="#" aria-label="Terms of Service">Terms</a>
@@ -348,6 +490,7 @@ const Footer = () => (
     <style jsx>{`
       .site-footer { background:var(--color-bg-alt); padding:2rem 1.5rem; margin-top:4rem; border-top:1px solid var(--color-border); }
       .footer-inner { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:var(--color-text-dim); }
+      .footer-center { flex: 1; display: flex; justify-content: center; }
       .links a { margin-left:1rem; color:var(--color-text-dim); text-decoration:none; transition:color .3s ease; }
       .links a:hover { color:var(--color-accent); }
     `}</style>

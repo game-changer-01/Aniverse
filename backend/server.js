@@ -44,6 +44,10 @@ app.use('/api/billing', require('./routes/billing'));
 app.use('/api/jikan', require('./routes/jikan'));
 app.use('/api/anilist', require('./routes/anilist'));
 app.use('/api/news', require('./routes/news'));
+app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/admin-dashboard', require('./routes/adminDashboard'));
+app.use('/api/feedback', require('./routes/feedback'));
+app.use('/api/reviews', require('./routes/reviews'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
