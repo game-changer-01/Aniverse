@@ -19,22 +19,27 @@ exports.topAnime = async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(500, parseInt(req.query.limit, 10) || 50));
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const key = `top:${page}:${limit}`;
+  const type = (req.query.type || '').toString().toLowerCase(); // 'movie', 'tv', 'ova', 'ona', 'special', 'music'
+  const key = `top:${page}:${limit}:${type || 'all'}`;
     const cached = getCache(key);
     if (cached) return res.json(cached);
 
-    const url = `https://api.jikan.moe/v4/top/anime?page=${page}&limit=${Math.min(limit, 25)}`;
+    const base = `https://api.jikan.moe/v4/top/anime`;
+    const url = `${base}?page=${page}&limit=${Math.min(limit, 25)}${type ? `&type=${encodeURIComponent(type)}` : ''}`;
     const { data } = await axios.get(url, { timeout: 12000 });
     // Jikan pages return up to 25 per page; if limit > 25, fetch more pages
     let items = data.data || [];
     let remaining = limit - items.length;
     let nextPage = page + 1;
     while (remaining > 0 && data.pagination?.has_next_page) {
-      const more = await axios.get(`https://api.jikan.moe/v4/top/anime?page=${nextPage}&limit=${Math.min(remaining, 25)}`, { timeout: 12000 });
+      const more = await axios.get(`${base}?page=${nextPage}&limit=${Math.min(remaining, 25)}${type ? `&type=${encodeURIComponent(type)}` : ''}`, { timeout: 12000 });
       items = items.concat(more.data?.data || []);
       remaining = limit - items.length;
       if (!(more.data?.pagination?.has_next_page)) break;
       nextPage += 1;
+    }
+    if (type) {
+      items = items.filter(a => (a.type || '').toString().toLowerCase() === type);
     }
     const result = {
       anime: items.map(a => ({
@@ -89,6 +94,7 @@ exports.getAnime = async (req, res) => {
       popularity: a.popularity,
       trailer: a.trailer,
       relations: a.relations,
+      streaming: a.streaming,
     };
     setCache(key, result);
     return res.json(result);

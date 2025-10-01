@@ -49,6 +49,7 @@ export default function JikanAnimeDetailsPage() {
   if (!anime) return <div className="wrap"><div role="status">Anime not found.</div></div>;
 
   const poster = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url;
+  const streaming = Array.isArray(anime?.streaming) ? anime.streaming : [];
 
   return (
     <div className="details-wrap">
@@ -63,7 +64,20 @@ export default function JikanAnimeDetailsPage() {
       </div>
 
       <div className="episodes">
-        <h2>Episodes {typeof anime?.episodes === 'number' ? `(Total ${anime.episodes})` : episodes.length ? `(Loaded ${episodes.length})` : ''}</h2>
+        <div className="ep-header">
+          <h2>Episodes {typeof anime?.episodes === 'number' ? `(Total ${anime.episodes})` : episodes.length ? `(Loaded ${episodes.length})` : ''}</h2>
+          {streaming.length > 0 && (
+            <a
+              className="start-btn"
+              href={streaming[0]?.url || '#'}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={`Start watching ${anime.title} on ${streaming[0]?.name || 'available platform'}`}
+            >
+              Start
+            </a>
+          )}
+        </div>
         {episodes.length === 0 ? (
           <div className="empty">No episodes listed.</div>
         ) : (
@@ -96,6 +110,7 @@ export default function JikanAnimeDetailsPage() {
         .genres, .year { opacity:.8; font-size:.9rem; margin:.15rem 0; }
         .desc { opacity:.9; line-height:1.6; margin-top:.75rem; }
     .episodes { margin-top:2rem; }
+    .ep-header { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .ep-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; }
     .ep-card { background:#121a29; border:1px solid #28344d; border-radius:12px; overflow:hidden; box-shadow: 0 6px 20px rgba(0,0,0,.25); transition: transform .25s ease, box-shadow .25s ease; }
     .ep-card:hover { transform: translateY(-4px); box-shadow: 0 10px 26px rgba(0,0,0,.35); }
@@ -107,6 +122,12 @@ export default function JikanAnimeDetailsPage() {
     .card-actions { display:flex; flex-wrap:wrap; gap:.4rem; padding:.6rem .75rem .8rem; }
     .watch { background:#243249; border:1px solid #2e3d55; border-radius:8px; padding:.3rem .55rem; color:#fff; text-decoration:none; font-size:.8rem; }
     .watch:hover { background:#2e3d55; }
+    .start-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; padding:.55rem 1.1rem; min-width:120px; border-radius:14px; color:#fff; text-decoration:none; font-weight:700; letter-spacing:.5px; backdrop-filter: blur(10px); background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.12)); border:1px solid rgba(255,255,255,0.18); box-shadow: 0 8px 30px rgba(0,0,0,.35), 0 0 0 2px rgba(255,255,255,0.05) inset; overflow:hidden; }
+    .start-btn::before { content:''; position:absolute; inset:-2px; background: conic-gradient(from 0deg, #ff3d3d, #ff7a00, #ffe600, #00ff85, #00c3ff, #6a00ff, #ff3dff, #ff3d3d); filter: blur(14px); opacity:.35; z-index:0; }
+    .start-btn::after { content:''; position:absolute; inset:2px; border-radius:12px; background: rgba(8,12,20,0.65); z-index:0; }
+    .start-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 36px rgba(0,0,0,.45); }
+    .start-btn:focus-visible { outline: 2px solid #6bc5ff; outline-offset: 2px; }
+    .start-btn > * { position:relative; z-index:1; }
         @media (max-width: 720px){ .top { grid-template-columns: 1fr; } }
       `}</style>
     </div>

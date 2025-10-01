@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import UserProfile from './UserProfile';
 
 const Layout = ({ children }) => {
   return (
@@ -59,6 +60,7 @@ const Header = () => {
             aria-label="Search anime"
           />
         </form>
+        <UserProfile />
       </div>
       <style jsx>{`
         .site-header { backdrop-filter: blur(10px); background: rgba(10,12,20,0.6); position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,0.4); }

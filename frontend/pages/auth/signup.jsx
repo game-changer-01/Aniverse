@@ -2,15 +2,24 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { register, isAuthenticated } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dbNotice, setDbNotice] = useState('');
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/recommendations');
+    }
+  }, [isAuthenticated, router]);
 
   // DB health notice so users understand failures when DB is offline
   useEffect(() => {
@@ -32,22 +41,22 @@ export default function SignupPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); setError('');
-    // basic client-side validation
+    setLoading(true);
+    setError('');
+    
+    // Basic client-side validation
     if (!username || !email || !password || password.length < 6) {
       setLoading(false);
       return setError('Please fill all fields and use a password with at least 6 characters.');
     }
-    try {
-      const res = await axios.post('/api/auth/register', { username, email, password });
-      if (res.data?.token) {
-        localStorage.setItem('token', res.data.token);
-        try { localStorage.setItem('aniverse.justAuthed', '1'); } catch {}
-        router.push('/recommendations#browse');
-      }
-    } catch (err) {
-      setError(err?.response?.data?.error || 'Signup failed');
-    } finally { setLoading(false); }
+    
+    const result = await register({ username, email, password });
+    if (result.success) {
+      router.push('/recommendations#browse');
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
   };
 
   return (

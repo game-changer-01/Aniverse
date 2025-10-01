@@ -1,6 +1,7 @@
 import '../src/styles/global.css';
 import Layout from '../src/components/Layout';
 import { ToastProvider } from '../src/components/ToastProvider';
+import { AuthProvider } from '../src/contexts/AuthContext';
 import Script from 'next/script';
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
@@ -38,13 +39,15 @@ export default function App({ Component, pageProps }) {
   }, [router.events]);
 
   return (
-    <ToastProvider>
-      <Script src="https://accounts.google.com/gsi/client" async defer strategy="afterInteractive" />
-      <div ref={overlayRef} aria-hidden className="route-overlay" />
-      {getLayout(<Component {...pageProps} />)}
-      <style jsx global>{`
-        .route-overlay { position:fixed; inset:0; background:radial-gradient(70% 70% at 50% 50%, rgba(20,28,45,0.6), rgba(10,12,20,0.95)); z-index:9999; opacity:0; pointer-events:none; }
-      `}</style>
-    </ToastProvider>
+    <AuthProvider>
+      <ToastProvider>
+        <Script src="https://accounts.google.com/gsi/client" async defer strategy="afterInteractive" />
+        <div ref={overlayRef} aria-hidden className="route-overlay" />
+        {getLayout(<Component {...pageProps} />)}
+        <style jsx global>{`
+          .route-overlay { position:fixed; inset:0; background:radial-gradient(70% 70% at 50% 50%, rgba(20,28,45,0.6), rgba(10,12,20,0.95)); z-index:9999; opacity:0; pointer-events:none; }
+        `}</style>
+      </ToastProvider>
+    </AuthProvider>
   );
 }

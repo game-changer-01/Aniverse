@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, googleLogin, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,6 +14,13 @@ export default function LoginPage() {
   const [gisReady, setGisReady] = useState(false);
   const [dbStatus, setDbStatus] = useState('unknown');
   const [dbNotice, setDbNotice] = useState('');
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/recommendations');
+    }
+  }, [isAuthenticated, router]);
 
   // GIS script is already loaded globally in _app; just detect availability
   useEffect(() => {
@@ -24,44 +33,52 @@ export default function LoginPage() {
     try {
       const client_id = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID;
       if (!client_id) return;
-      window.google.accounts.id.initialize({ client_id, callback: async ({ credential }) => {
-        if (!credential) return;
-        try {
-          const resp = await axios.post('/api/auth/google', { credential });
-          if (resp.data?.token) {
-            localStorage.setItem('token', resp.data.token);
-            try { localStorage.setItem('aniverse.justAuthed', '1'); } catch {}
+      window.google.accounts.id.initialize({ 
+        client_id, 
+        callback: async ({ credential }) => {
+          if (!credential) return;
+          setLoading(true);
+          setError('');
+          
+          const result = await googleLogin(credential);
+          if (result.success) {
             router.push('/recommendations#browse');
+          } else {
+            setError(result.error);
           }
-        } catch (e) {
-          setError(e?.response?.data?.error || e.message || 'Google login failed');
+          setLoading(false);
         }
-      }});
+      });
       const el = document.getElementById('google-btn-visible');
       if (el) {
-        window.google.accounts.id.renderButton(el, { theme: 'outline', size: 'large', width: 320, shape: 'pill' });
+        window.google.accounts.id.renderButton(el, { 
+          theme: 'outline', 
+          size: 'large', 
+          width: 320, 
+          shape: 'pill' 
+        });
       }
     } catch {}
-  }, [gisReady]);
+  }, [gisReady, googleLogin, router]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); setError('');
-    // simple client-side validation
+    setLoading(true);
+    setError('');
+    
+    // Simple client-side validation
     if (!email || !password || password.length < 6) {
       setLoading(false);
       return setError('Please enter a valid email and a password with at least 6 characters.');
     }
-    try {
-      const res = await axios.post('/api/auth/login', { email, password });
-      if (res.data?.token) {
-        localStorage.setItem('token', res.data.token);
-        try { localStorage.setItem('aniverse.justAuthed', '1'); } catch {}
-        router.push('/recommendations#browse');
-      }
-    } catch (err) {
-      setError(err?.response?.data?.error || 'Login failed');
-    } finally { setLoading(false); }
+    
+    const result = await login({ email, password });
+    if (result.success) {
+      router.push('/recommendations#browse');
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
   };
 
   // Show DB connectivity notice to explain failures when Atlas is offline

@@ -38,7 +38,7 @@ const RecommendationsPage = () => {
   const [timelineShouldPlay, setTimelineShouldPlay] = useState(false);
   const [timelineLoaded, setTimelineLoaded] = useState(false);
   const [meta, setMeta] = useState({ guest:false, warning:null, algorithm:null, degraded:false });
-  const [selectedAnimeInfo, setSelectedAnimeInfo] = useState({ title: '', seasonData: [], malId: null, poster: '', totalEpisodes: 0 });
+  const [selectedAnimeInfo, setSelectedAnimeInfo] = useState({ title: '', seasonData: [], malId: null, poster: '', totalEpisodes: 0, streaming: [] });
   const [selectedAnimeEpisodes, setSelectedAnimeEpisodes] = useState([]);
   const [episodeFilter, setEpisodeFilter] = useState('all'); // all | canon
   const [topMovies, setTopMovies] = useState([]);
@@ -145,10 +145,9 @@ const RecommendationsPage = () => {
     // Prefetch Top Movies (special category)
     (async () => {
       try {
-        const resp = await axios.get('/api/jikan/top?limit=50');
+        const resp = await axios.get('/api/jikan/top?limit=50&type=movie');
         const items = Array.isArray(resp.data?.anime) ? resp.data.anime : [];
-        const movies = items.filter(a => (a.type || '').toLowerCase() === 'movie');
-        setTopMovies(movies.slice(0, 20));
+        setTopMovies(items.slice(0, 20));
       } catch {}
     })();
   };
@@ -168,6 +167,7 @@ const RecommendationsPage = () => {
   let malId = anime.mal_id || null;
   let poster = anime.image || anime.poster || '';
   let totalEpisodes = 0;
+  let streaming = [];
       const palette = ['#6bc5ff','#8fff9f','#ffd36b','#ff8f6b','#b28bff'];
       try {
         // If no MAL id, try to resolve via Jikan search by title (best-effort)
@@ -191,6 +191,7 @@ const RecommendationsPage = () => {
           title = details?.title || title;
           poster = details?.images?.jpg?.large_image_url || details?.images?.jpg?.image_url || poster;
           totalEpisodes = epCount || 0;
+          streaming = Array.isArray(details?.streaming) ? details.streaming : [];
           // collect related movies from relations
           try {
             const rels = Array.isArray(details?.relations) ? details.relations : [];
@@ -236,7 +237,7 @@ const RecommendationsPage = () => {
         // Fallback generic seasons
         seasonData = Array.from({ length: 3 }).map((_, i) => ({ key:`s${i+1}`, label:`Season ${i+1}`, color: palette[i % palette.length] }));
       }
-  setSelectedAnimeInfo({ title, seasonData, malId, poster, totalEpisodes });
+  setSelectedAnimeInfo({ title, seasonData, malId, poster, totalEpisodes, streaming });
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       // Ask backend for recommendations biased around this anime (fallback to hybrid if unsupported)
@@ -600,11 +601,26 @@ const RecommendationsPage = () => {
             disabled={loading}
             seasonData={selectedAnimeInfo.seasonData}
             title={selectedAnimeInfo.title ? `${selectedAnimeInfo.title} — Seasons` : undefined}
+            relatedMovies={relatedMovies}
           />
           {/* Episodes for the selected anime and season */}
           {episodesForSeason().length > 0 && (
             <div className="episodes-section">
-              <h2 className="section-title">{(SEASONS.find(s => s.key === season)?.label || 'Season')} Episodes</h2>
+              <div className="ep-header">
+                <h2 className="section-title">{(SEASONS.find(s => s.key === season)?.label || 'Season')} Episodes</h2>
+                {/* Start button: opens first available platform for the anime */}
+                {Array.isArray(selectedAnimeInfo.streaming) && selectedAnimeInfo.streaming.length > 0 && (
+                  <a
+                    className="start-btn"
+                    href={selectedAnimeInfo.streaming[0]?.url || '#'}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    aria-label={`Start watching ${selectedAnimeInfo.title} on ${selectedAnimeInfo.streaming[0]?.name || 'available platform'}`}
+                  >
+                    Start
+                  </a>
+                )}
+              </div>
               <div className="ep-filters" role="tablist" aria-label="Episode filters">
                 <button className={episodeFilter==='all'?'active':''} onClick={()=>setEpisodeFilter('all')} role="tab" aria-selected={episodeFilter==='all'}>All</button>
                 <button className={episodeFilter==='canon'?'active':''} onClick={()=>setEpisodeFilter('canon')} role="tab" aria-selected={episodeFilter==='canon'}>Canon only</button>
@@ -613,9 +629,21 @@ const RecommendationsPage = () => {
                 {episodesForSeason().map((ep, idx) => {
                   const epNum = ep.episode || ep.number || idx + 1;
                   const epTitle = ep.title || ep.title_romanji || ep.title_japanese || 'Untitled';
-                  const makeQuery = (t, n) => `${t || ''} episode ${n || ''}`.trim();
-                  const crunchyLink = (t, n) => `https://www.crunchyroll.com/search?q=${encodeURIComponent(makeQuery(t, n))}`;
-                  const ytLink = (t, n) => `https://www.youtube.com/results?search_query=${encodeURIComponent(makeQuery(t, n))}`;
+                  // Normalize streaming providers and build links
+                  const known = {
+                    crunchyroll: { match: /crunchyroll/i, label: 'Crunchyroll' },
+                    netflix: { match: /netflix/i, label: 'Netflix' },
+                    disney: { match: /disney\+|disney plus|hotstar|disney\+ hotstar/i, label: 'Disney+ Hotstar' },
+                    jiocinema: { match: /jio\s*cine(ma)?/i, label: 'JioCinema' },
+                    youtube: { match: /you\s*tube/i, label: 'YouTube' },
+                  };
+                  const platforms = Array.isArray(selectedAnimeInfo.streaming) ? selectedAnimeInfo.streaming : [];
+                  const available = Object.entries(known).map(([key, meta]) => {
+                    const found = platforms.find(p => meta.match.test(p.name || p.url || ''));
+                    if (!found) return null;
+                    const url = found.url || '';
+                    return { key, label: meta.label, url };
+                  }).filter(Boolean);
                   return (
                     <div key={ep.mal_id || epNum || idx} className="ep-card" role="listitem" aria-label={`Episode ${epNum}: ${epTitle}`}>
                       <div className="thumb" aria-hidden>
@@ -625,10 +653,13 @@ const RecommendationsPage = () => {
                           <div className="ep-title">{epTitle}</div>
                         </div>
                       </div>
-                      <div className="card-actions">
-                        <a href={crunchyLink(selectedAnimeInfo.title, epNum)} target="_blank" rel="noreferrer noopener" className="watch">Crunchyroll</a>
-                        <a href={ytLink(selectedAnimeInfo.title, epNum)} target="_blank" rel="noreferrer noopener" className="watch">YouTube</a>
-                      </div>
+                      {available.length > 0 && (
+                        <div className="card-actions" role="group" aria-label="Available platforms">
+                          {available.map((pl) => (
+                            <a key={pl.key} href={pl.url} target="_blank" rel="noreferrer noopener" className={`watch platform ${pl.key}`} aria-label={`Watch on ${pl.label}`}>{pl.label}</a>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -844,6 +875,7 @@ const RecommendationsPage = () => {
       `}</style>
       <style jsx>{`
         .episodes-section { max-width:1300px; margin:0 auto; padding:0 2rem 3rem; }
+        .ep-header { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
         .ep-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; }
         .ep-card { background:#121a29; border:1px solid #28344d; border-radius:12px; overflow:hidden; box-shadow: 0 6px 20px rgba(0,0,0,.25); transition: transform .25s ease, box-shadow .25s ease; }
         .ep-card:hover { transform: translateY(-4px); box-shadow: 0 10px 26px rgba(0,0,0,.35); }
@@ -855,6 +887,17 @@ const RecommendationsPage = () => {
         .card-actions { display:flex; flex-wrap:wrap; gap:.4rem; padding:.6rem .75rem .8rem; }
         .watch { background:#243249; border:1px solid #2e3d55; border-radius:8px; padding:.3rem .55rem; color:#fff; text-decoration:none; font-size:.8rem; }
         .watch:hover { background:#2e3d55; }
+        .watch.platform.crunchyroll { border-color:#f78f1f55; }
+        .watch.platform.netflix { border-color:#e5091455; }
+        .watch.platform.disney { border-color:#1f80e055; }
+        .watch.platform.jiocinema { border-color:#ff006655; }
+        .watch.platform.youtube { border-color:#ff000055; }
+        .start-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; padding:.55rem 1.1rem; min-width:120px; border-radius:14px; color:#fff; text-decoration:none; font-weight:700; letter-spacing:.5px; backdrop-filter: blur(10px); background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.12)); border:1px solid rgba(255,255,255,0.18); box-shadow: 0 8px 30px rgba(0,0,0,.35), 0 0 0 2px rgba(255,255,255,0.05) inset; overflow:hidden; }
+        .start-btn::before { content:''; position:absolute; inset:-2px; background: conic-gradient(from 0deg, #ff3d3d, #ff7a00, #ffe600, #00ff85, #00c3ff, #6a00ff, #ff3dff, #ff3d3d); filter: blur(14px); opacity:.35; z-index:0; }
+        .start-btn::after { content:''; position:absolute; inset:2px; border-radius:12px; background: rgba(8,12,20,0.65); z-index:0; }
+        .start-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 36px rgba(0,0,0,.45); }
+        .start-btn:focus-visible { outline: 2px solid #6bc5ff; outline-offset: 2px; }
+        .start-btn > * { position:relative; z-index:1; }
       `}</style>
       {/* dynamic background image for styled-jsx */}
       <style jsx>{`

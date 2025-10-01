@@ -94,6 +94,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  picture: {
+    type: String,
+    default: ''
+  },
   preferences: {
     type: userPreferenceSchema,
     default: () => ({})

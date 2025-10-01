@@ -4,7 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const RecommendationTimeline = ({ recommendations, onAnimeClick, onWatchClick, play }) => {
+const RecommendationTimeline = ({ recommendations, onAnimeClick, play }) => {
   const timelineRef = useRef(null);
   const introTlRef = useRef(null);
   const cardsRefs = useRef([]);
@@ -134,29 +134,6 @@ const RecommendationTimeline = ({ recommendations, onAnimeClick, onWatchClick, p
     if (onAnimeClick) onAnimeClick(anime);
   };
 
-  const handleWatchClick = (anime, e) => {
-    e.stopPropagation();
-    
-    // Create ripple effect
-    const button = e.currentTarget;
-    const rect = button.getBoundingClientRect();
-    const ripple = document.createElement('div');
-    
-    ripple.style.position = 'absolute';
-    ripple.style.borderRadius = '50%';
-    ripple.style.background = 'rgba(255,255,255,0.6)';
-    ripple.style.transform = 'scale(0)';
-    ripple.style.animation = 'ripple 0.6s linear';
-    ripple.style.left = (e.clientX - rect.left) + 'px';
-    ripple.style.top = (e.clientY - rect.top) + 'px';
-    
-    button.appendChild(ripple);
-    
-    setTimeout(() => ripple.remove(), 600);
-    
-    if (onWatchClick) onWatchClick(anime);
-  };
-
   if (!recommendations.length) {
     return (
       <div className="loading-timeline">
@@ -224,14 +201,6 @@ const RecommendationTimeline = ({ recommendations, onAnimeClick, onWatchClick, p
                 </p>
                 
                 <div className="card-actions">
-                  <button
-                    className="watch-btn"
-                    onClick={(e) => handleWatchClick(anime, e)}
-                    aria-label={`Watch ${anime.title} episode 1`}
-                  >
-                    <span className="btn-icon">▶</span>
-                    Watch Now
-                  </button>
                   <div className="recommendation-score">
                     Match: {Math.round((anime.recommendationScore || anime.hybridScore || 0) * 100)}%
                   </div>
@@ -410,33 +379,8 @@ const RecommendationTimeline = ({ recommendations, onAnimeClick, onWatchClick, p
 
         .card-actions {
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
-        }
-
-        .watch-btn {
-          background: linear-gradient(45deg, var(--color), #ff6b6b);
-          color: white;
-          border: none;
-          padding: 0.75rem 1.5rem;
-          border-radius: 25px;
-          font-weight: bold;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .watch-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-icon {
-          font-size: 1.2rem;
         }
 
         .recommendation-score {
