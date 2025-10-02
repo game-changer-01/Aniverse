@@ -1,9 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link'; // retained for any other links (wordmark replaced with button)
 import { useRouter } from 'next/router';
+import dynamic from 'next/dynamic';
 import UserProfile from './UserProfile';
 import FeedbackButton from './FeedbackButton';
 import { useTheme } from '../contexts/ThemeContext';
+
+// Load SmartSearch dynamically (client-side only)
+const SmartSearch = dynamic(() => import('./SmartSearch').then(mod => mod.default || mod), {
+  ssr: false,
+  loading: () => null
+});
 
 const Layout = ({ children }) => {
   return (
@@ -171,7 +178,7 @@ const Header = () => {
               );
             })}
           </div>
-          <button className={`icon-btn search-toggle ${showSearch ? 'active' : ''}`} aria-label={showSearch ? 'Close search' : 'Open search'} onClick={() => setShowSearch(s=>!s)}>
+          <button className="icon-btn search-toggle" aria-label="Open search" onClick={() => setShowSearch(true)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/>
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -197,20 +204,8 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Expanding search bar overlay */}
-      <div className={`search-bar-wrapper ${showSearch ? 'open' : ''}`} aria-hidden={!showSearch}>
-        <form className="search-form" role="search" aria-label="Site search" onSubmit={onSubmit}>
-          <input
-            ref={searchInputRef}
-            type="search"
-            placeholder="Search anime..."
-            value={q}
-            onChange={e=>setQ(e.target.value)}
-            aria-label="Search anime"
-          />
-          <button type="submit" className="submit-btn" aria-label="Submit search">Search</button>
-        </form>
-      </div>
+      {/* Smart Search Modal */}
+      <SmartSearch isOpen={showSearch} onClose={() => setShowSearch(false)} />
 
       <style jsx>{`
   .site-header { position:sticky; top:0; z-index:120; padding:0.18rem 0 0.30rem; transition: padding .35s ease; }
@@ -222,7 +217,7 @@ const Header = () => {
           box-shadow: 0 4px 22px -6px var(--color-shadow), 0 0 0 1px var(--color-glass) inset, 0 0 0 1px var(--color-border), 0 0 46px -10px var(--color-accent);
           border: 2px solid transparent;
           background-clip: padding-box;
-          overflow: hidden;
+          overflow: visible;
           transition: padding .5s ease, backdrop-filter .55s ease, background .6s ease, box-shadow .8s ease;
         }
 
