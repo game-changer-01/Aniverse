@@ -81,7 +81,12 @@ LoginPage.getLayout = function getLayout(page) {
     if (result.success) {
       router.push('/recommendations#browse');
     } else {
-      setError(result.error);
+      // Check if the error indicates this is a Google OAuth account
+      if (result.error && result.error.includes('Google')) {
+        setError('This account was created with Google. Please use the "Sign in with Google" button below.');
+      } else {
+        setError(result.error || 'Login failed. Please check your credentials.');
+      }
     }
     setLoading(false);
   };
@@ -129,8 +134,8 @@ LoginPage.getLayout = function getLayout(page) {
           </div>
         )}
         <label>
-          <span>Email</span>
-          <input value={email} onChange={e=>{ setEmail(e.target.value); if(error) setError(''); }} type="email" required autoComplete="email" placeholder="you@example.com" />
+          <span>Email or Username</span>
+          <input value={email} onChange={e=>{ setEmail(e.target.value); if(error) setError(''); }} type="text" required autoComplete="email" placeholder="you@example.com or username" />
         </label>
         <label>
           <span>Password</span>

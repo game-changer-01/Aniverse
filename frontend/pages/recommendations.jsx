@@ -9,6 +9,7 @@ import AnimeGrid from '../src/components/AnimeGrid';
 import TopPopular from '../src/components/TopPopular';
 import ReviewSystem from '../src/components/ReviewSystem';
 import SeasonRoadmap, { SEASONS } from '../src/components/SeasonRoadmap';
+import RecommendationModes from '../src/components/RecommendationModes';
 const DynamicTimeline = dynamic(() => import('../src/components/RecommendationTimeline'), { ssr:false, loading: () => <div style={{padding:'4rem', textAlign:'center'}}>Preparing timeline...</div> });
 import axios from 'axios';
 import { useToast } from '../src/components/ToastProvider';
@@ -66,6 +67,56 @@ const RecommendationsPage = () => {
     // Read query param ?search
     if (router && router.query && typeof router.query.search === 'string') {
       setSearchQuery(router.query.search);
+    }
+    // Check if anime parameter exists for roadmap view
+    if (router && router.query && router.query.anime) {
+      const animeId = router.query.anime;
+      // Check if we have data parameter for immediate display
+      if (router.query.data) {
+        try {
+          const animeData = JSON.parse(decodeURIComponent(router.query.data));
+          handleSelectAnime(animeData);
+        } catch (error) {
+          console.error('Error parsing anime data:', error);
+          // Fallback to fetching from API
+          (async () => {
+            try {
+              // Try local API first
+              let response;
+              try {
+                response = await axios.get(`/api/anime/${animeId}`);
+              } catch {
+                // Fallback to Jikan API
+                response = await axios.get(`/api/jikan/anime/${animeId}`);
+              }
+              if (response.data) {
+                handleSelectAnime(response.data);
+              }
+            } catch (error) {
+              console.error('Error fetching anime for roadmap:', error);
+            }
+          })();
+        }
+      } else {
+        // Fetch anime details and show roadmap
+        (async () => {
+          try {
+            // Try local API first
+            let response;
+            try {
+              response = await axios.get(`/api/anime/${animeId}`);
+            } catch {
+              // Fallback to Jikan API
+              response = await axios.get(`/api/jikan/anime/${animeId}`);
+            }
+            if (response.data) {
+              handleSelectAnime(response.data);
+            }
+          } catch (error) {
+            console.error('Error fetching anime for roadmap:', error);
+          }
+        })();
+      }
     }
     // Check if user is logged in
     const token = localStorage.getItem('token');
@@ -431,155 +482,17 @@ const RecommendationsPage = () => {
               showStartCta={false}
             />
           </div>
-          {/* New: show a browse grid first to let users pick an anime, then reveal roadmap on Details */}
-          <div id="browse">
-            <AnimeGrid onSelectAnime={handleSelectAnime} pageSize={24} search={searchQuery} />
-          </div>
-          <div id="choose-style" className="algorithm-selector" role="tablist" aria-label="Recommendation algorithm selection">
-            <h3>Choose Your Recommendation Style</h3>
-            <div className="algorithm-options">
-              <button 
-                role="tab"
-                aria-selected={selectedAlgorithm === 'hybrid'}
-                tabIndex={selectedAlgorithm === 'hybrid' ? 0 : -1}
-                onClick={() => handleAlgorithmChange('hybrid')}
-                onKeyDown={(e) => {
-                  if (['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) {
-                    e.preventDefault();
-                    const idx = algorithms.findIndex(a => a.key === selectedAlgorithm);
-                    if (e.key === 'ArrowRight') {
-                      handleAlgorithmChange(algorithms[(idx + 1) % algorithms.length].key);
-                    } else if (e.key === 'ArrowLeft') {
-                      handleAlgorithmChange(algorithms[(idx - 1 + algorithms.length) % algorithms.length].key);
-                    } else if (e.key === 'Home') {
-                      handleAlgorithmChange(algorithms[0].key);
-                    } else if (e.key === 'End') {
-                      handleAlgorithmChange(algorithms[algorithms.length - 1].key);
-                    }
-                  }
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleAlgorithmChange('hybrid');
-                  }
-                }}
-                className={selectedAlgorithm === 'hybrid' ? 'active' : ''}
-                disabled={loading}
-              >
-                <div className="option-icon">🎯</div>
-                <div className="option-text">
-                  <strong>Smart Mix</strong>
-                  <span>Best of all worlds</span>
-                </div>
-              </button>
-              
-              <button 
-                role="tab"
-                aria-selected={selectedAlgorithm === 'content'}
-                tabIndex={selectedAlgorithm === 'content' ? 0 : -1}
-                onClick={() => handleAlgorithmChange('content')}
-                onKeyDown={(e) => {
-                  if (['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) {
-                    e.preventDefault();
-                    const idx = algorithms.findIndex(a => a.key === selectedAlgorithm);
-                    if (e.key === 'ArrowRight') {
-                      handleAlgorithmChange(algorithms[(idx + 1) % algorithms.length].key);
-                    } else if (e.key === 'ArrowLeft') {
-                      handleAlgorithmChange(algorithms[(idx - 1 + algorithms.length) % algorithms.length].key);
-                    } else if (e.key === 'Home') {
-                      handleAlgorithmChange(algorithms[0].key);
-                    } else if (e.key === 'End') {
-                      handleAlgorithmChange(algorithms[algorithms.length - 1].key);
-                    }
-                  }
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleAlgorithmChange('content');
-                  }
-                }}
-                className={selectedAlgorithm === 'content' ? 'active' : ''}
-                disabled={loading}
-              >
-                <div className="option-icon">🔍</div>
-                <div className="option-text">
-                  <strong>Content Based</strong>
-                  <span>Similar to what you like</span>
-                </div>
-              </button>
-              
-              <button 
-                role="tab"
-                aria-selected={selectedAlgorithm === 'collaborative'}
-                tabIndex={selectedAlgorithm === 'collaborative' ? 0 : -1}
-                onClick={() => handleAlgorithmChange('collaborative')}
-                onKeyDown={(e) => {
-                  if (['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) {
-                    e.preventDefault();
-                    const idx = algorithms.findIndex(a => a.key === selectedAlgorithm);
-                    if (e.key === 'ArrowRight') {
-                      handleAlgorithmChange(algorithms[(idx + 1) % algorithms.length].key);
-                    } else if (e.key === 'ArrowLeft') {
-                      handleAlgorithmChange(algorithms[(idx - 1 + algorithms.length) % algorithms.length].key);
-                    } else if (e.key === 'Home') {
-                      handleAlgorithmChange(algorithms[0].key);
-                    } else if (e.key === 'End') {
-                      handleAlgorithmChange(algorithms[algorithms.length - 1].key);
-                    }
-                  }
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleAlgorithmChange('collaborative');
-                  }
-                }}
-                className={selectedAlgorithm === 'collaborative' ? 'active' : ''}
-                disabled={loading}
-              >
-                <div className="option-icon">👥</div>
-                <div className="option-text">
-                  <strong>Community</strong>
-                  <span>What similar users enjoy</span>
-                </div>
-              </button>
-              
-              <button 
-                role="tab"
-                aria-selected={selectedAlgorithm === 'popular'}
-                tabIndex={selectedAlgorithm === 'popular' ? 0 : -1}
-                onClick={() => handleAlgorithmChange('popular')}
-                onKeyDown={(e) => {
-                  if (['ArrowRight','ArrowLeft','Home','End'].includes(e.key)) {
-                    e.preventDefault();
-                    const idx = algorithms.findIndex(a => a.key === selectedAlgorithm);
-                    if (e.key === 'ArrowRight') {
-                      handleAlgorithmChange(algorithms[(idx + 1) % algorithms.length].key);
-                    } else if (e.key === 'ArrowLeft') {
-                      handleAlgorithmChange(algorithms[(idx - 1 + algorithms.length) % algorithms.length].key);
-                    } else if (e.key === 'Home') {
-                      handleAlgorithmChange(algorithms[0].key);
-                    } else if (e.key === 'End') {
-                      handleAlgorithmChange(algorithms[algorithms.length - 1].key);
-                    }
-                  }
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleAlgorithmChange('popular');
-                  }
-                }}
-                className={selectedAlgorithm === 'popular' ? 'active' : ''}
-                disabled={loading}
-              >
-                <div className="option-icon">🔥</div>
-                <div className="option-text">
-                  <strong>Trending</strong>
-                  <span>What's hot right now</span>
-                </div>
-              </button>
-            </div>
-          </div>
+          {/* New: Advanced Recommendation Modes */}
+          <section className="recommendation-modes-section" id="browse-section">
+            <RecommendationModes />
+          </section>
           {/* Top 500 Popular (Japan) */}
-          <section className="top-popular">
+          <section className="top-popular" id="top-popular-section">
             <div className="top-popular-header">
-              <h2>Top 500 Popular Anime (JP)</h2>
-              <p className="hint">Discover the most beloved anime series from Japan.</p>
+              <div>
+                <h2>Top Popular Anime</h2>
+                <p className="hint">Discover the most beloved anime series from Japan</p>
+              </div>
             </div>
             <TopPopular />
           </section>
@@ -766,8 +679,8 @@ const RecommendationsPage = () => {
       )}
 
       <style jsx>{`
-  .recommendations-page { min-height:100vh; background:var(--color-bg); color:var(--color-text); display:flex; flex-direction:column; }
-  .hero-wrap { position:relative; isolation:isolate; z-index:0; contain:content; }
+  .recommendations-page { min-height:100vh; background:var(--color-bg); color:var(--color-text); display:flex; flex-direction:column; position:relative; }
+  .hero-wrap { position:relative; isolation:isolate; z-index:1; contain:content; }
   /* Ensure hero video/background sits above subsequent content during initial load */
   .hero-wrap :global(.video-bg) { z-index: 2; }
   .hero-wrap :global(.hero-content),
@@ -794,84 +707,14 @@ const RecommendationsPage = () => {
   .loading-small { padding:1rem; font-size:.9rem; color:var(--color-text-dim); }
   .empty { padding:2rem 0; text-align:center; font-size:.9rem; color:var(--color-text-dim); }
 
-        .algorithm-selector {
-          padding: 4rem 2rem;
-          background: var(--color-surface);
-          text-align: center;
-          color: var(--color-text);
-          border-top: 1px solid var(--color-border);
-          border-bottom: 1px solid var(--color-border);
-        }
-
-        .algorithm-selector h3 {
-          font-size: 2rem;
-          margin-bottom: 3rem;
-          background: linear-gradient(45deg, var(--color-accent), var(--color-accent-glow));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .algorithm-options {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 2rem;
-          max-width: 1000px;
-          margin: 0 auto;
-        }
-
-        .algorithm-options button {
-          background: var(--color-surface);
-          border: 2px solid var(--color-border);
-          border-radius: 15px;
-          padding: 2rem;
-          color: var(--color-text);
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          text-align: left;
-        }
-
-        .algorithm-options button:hover {
-          background: var(--color-accent-alt);
-          transform: translateY(-5px);
-          box-shadow: 0 10px 30px var(--color-shadow);
-        }
-
-        .algorithm-options button.active {
-          border-color: var(--color-accent);
-          background: var(--color-accent-alt);
-        }
-  .transition-indicator { font-size:.7rem; letter-spacing:.5px; opacity:.6; margin-left:.75rem; }
-
-        .algorithm-options button[disabled] { 
-          opacity:0.5; 
-          cursor:not-allowed; 
-          filter:grayscale(0.3); 
-        }
-
-        .option-icon {
-          font-size: 2rem;
-          flex-shrink: 0;
-        }
-
-        .option-text {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .option-text strong {
-          font-size: 1.1rem;
-          font-weight: 600;
-        }
-
-        .option-text span {
-          font-size: 0.9rem;
-          opacity: 0.7;
-        }
+  .recommendation-modes-section {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    background: var(--color-bg);
+    position: relative;
+    z-index: 10;
+  }
 
         .status-banner { text-align:center; padding:0.75rem 1rem; font-size:0.85rem; letter-spacing:.5px; }
   .status-banner.warning { background:linear-gradient(90deg,var(--color-accent-alt),var(--color-accent)); border-top:1px solid var(--color-accent); border-bottom:1px solid var(--color-accent); }
@@ -883,8 +726,10 @@ const RecommendationsPage = () => {
         .top-popular { 
           max-width:1300px; 
           margin:0 auto; 
-          padding:2rem 1.5rem 3rem;
+          padding:4rem 1.5rem 3rem;
           background:var(--color-bg);
+          position: relative;
+          z-index: 10;
         }
         
         .top-popular-header { 
@@ -892,23 +737,30 @@ const RecommendationsPage = () => {
           align-items:baseline; 
           justify-content:space-between; 
           gap:1rem; 
-          margin-bottom:1rem; 
+          margin-bottom:2rem;
+          text-align: center;
         }
         
         .top-popular-header h2 { 
-          margin:0; 
-          font-size:1.6rem; 
+          margin:0 auto; 
+          font-size:2.5rem; 
+          font-weight: 900;
           color:var(--color-text); 
-          background:linear-gradient(45deg, var(--color-accent), var(--color-accent-glow));
+          background:linear-gradient(135deg, #5856d6 0%, #dd2a7b 50%, #ffd700 100%);
           -webkit-background-clip:text;
           -webkit-text-fill-color:transparent;
-          background-clip:text; 
+          background-clip:text;
+          letter-spacing: -0.5px;
+          text-transform: uppercase;
         }
         
         .top-popular-header .hint { 
-          margin:0; 
-          opacity:.75; 
-          color:var(--color-text-dim); 
+          margin:0.5rem 0 0; 
+          font-size: 1rem;
+          color:rgba(255, 255, 255, 0.6); 
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          font-weight: 500;
         }
 
   .profile-pill { max-width:1300px; margin:0 auto; padding:0 2rem 0.5rem; display:flex; align-items:center; gap:.5rem; color:var(--color-text-dim); }
@@ -936,22 +788,6 @@ const RecommendationsPage = () => {
           letter-spacing: 0.5px;
           text-transform: uppercase;
           font-weight: 700;
-        }
-
-        @media (max-width: 768px) {
-          .algorithm-options {
-            grid-template-columns: 1fr;
-          }
-          
-          .algorithm-options button {
-            flex-direction: column;
-            text-align: center;
-            gap: 1rem;
-          }
-
-          .roadmap-main-heading h2 {
-            font-size: 1.8rem;
-          }
         }
       `}</style>
       <style jsx>{`
@@ -1022,6 +858,16 @@ const RecommendationsPage = () => {
         .start-btn > * { 
           position: relative; 
           z-index: 1; 
+        }
+
+        @media (max-width: 768px) {
+          .top-popular-header h2 {
+            font-size: 1.75rem;
+          }
+
+          .top-popular-header .hint {
+            font-size: 0.875rem;
+          }
         }
       `}</style>
       {/* dynamic background image for styled-jsx */}

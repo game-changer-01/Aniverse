@@ -478,3 +478,163 @@ exports.getRecommendationStats = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// New: Smart Mix - Balanced genre blend
+exports.getSmartMix = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const userId = req.user?._id;
+    
+    // Get all genres
+    const allGenres = ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'];
+    
+    // If user is logged in, get their preferences
+    let genreWeights = {};
+    if (userId) {
+      const user = await User.findById(userId).populate('interactions.anime');
+      user.interactions.forEach(interaction => {
+        if (interaction.anime?.genres) {
+          interaction.anime.genres.forEach(genre => {
+            genreWeights[genre] = (genreWeights[genre] || 0) + 1;
+          });
+        }
+      });
+    }
+    
+    // Balance genres - get equal representation
+    const perGenre = Math.ceil(limit / allGenres.length);
+    let recommendations = [];
+    
+    for (const genre of allGenres) {
+      const animes = await Anime.find({ genres: genre })
+        .sort({ rating: -1, viewCount: -1 })
+        .limit(perGenre)
+        .lean();
+      recommendations.push(...animes);
+    }
+    
+    // Remove duplicates and shuffle
+    const seen = new Set();
+    recommendations = recommendations.filter(anime => {
+      if (seen.has(anime._id.toString())) return false;
+      seen.add(anime._id.toString());
+      return true;
+    });
+    
+    // Shuffle and limit
+    recommendations = recommendations
+      .sort(() => Math.random() - 0.5)
+      .slice(0, limit);
+    
+    res.json({
+      mode: 'smart-mix',
+      recommendations,
+      message: 'Balanced mix across all genres'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// New: Content-Based - High rating + great storyline
+exports.getContentBased = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    
+    // Get highly rated anime with good story indicators
+    const recommendations = await Anime.find({
+      rating: { $gte: 8.0 }, // High IMDb-like rating
+      $or: [
+        { genres: { $in: ['Drama', 'Mystery', 'Thriller', 'Psychological'] } },
+        { synopsis: { $regex: /(story|plot|narrative|character development)/i } }
+      ]
+    })
+      .sort({ rating: -1, viewCount: -1 })
+      .limit(limit)
+      .lean();
+    
+    res.json({
+      mode: 'content-based',
+      recommendations,
+      message: 'High-rated anime with compelling storylines'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// New: Community Favorites - Yearly worldwide favorites
+exports.getCommunityFavorites = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const year = parseInt(req.query.year) || new Date().getFullYear();
+    
+    // Get anime by year, sorted by popularity and rating
+    const recommendations = await Anime.aggregate([
+      {
+        $match: {
+          year: { $gte: year - 1, $lte: year + 1 },
+          rating: { $gte: 7.0 }
+        }
+      },
+      {
+        $addFields: {
+          popularityScore: {
+            $add: [
+              { $multiply: ['$rating', 10] },
+              { $divide: ['$viewCount', 100] }
+            ]
+          }
+        }
+      },
+      { $sort: { popularityScore: -1 } },
+      { $limit: limit }
+    ]);
+    
+    res.json({
+      mode: 'community',
+      year,
+      recommendations,
+      message: `Community favorites from ${year}`
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// New: Trending - Monthly top 10
+exports.getTrending = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    // Get recently popular anime based on view count and recent updates
+    const recommendations = await Anime.find({
+      updatedAt: { $gte: thirtyDaysAgo }
+    })
+      .sort({ viewCount: -1, rating: -1, updatedAt: -1 })
+      .limit(limit)
+      .lean();
+    
+    // If not enough recent anime, get popular ones
+    if (recommendations.length < limit) {
+      const additional = await Anime.find({
+        _id: { $nin: recommendations.map(r => r._id) }
+      })
+        .sort({ viewCount: -1, rating: -1 })
+        .limit(limit - recommendations.length)
+        .lean();
+      recommendations.push(...additional);
+    }
+    
+    res.json({
+      mode: 'trending',
+      recommendations,
+      message: 'Top trending anime this month',
+      period: 'Last 30 days'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
