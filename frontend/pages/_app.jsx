@@ -4,16 +4,24 @@ import { ToastProvider } from '../src/components/ToastProvider';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { ThemeProvider } from '../src/contexts/ThemeContext';
 import Script from 'next/script';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import anime from 'animejs';
 
 export default function App({ Component, pageProps }) {
   const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const overlayRef = useRef(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || !router) return;
+
     const start = () => {
       if (!overlayRef.current) return;
       overlayRef.current.style.pointerEvents = 'auto';
@@ -37,7 +45,7 @@ export default function App({ Component, pageProps }) {
       router.events.off('routeChangeComplete', done);
       router.events.off('routeChangeError', done);
     };
-  }, [router.events]);
+  }, [router, isMounted]);
 
   return (
     <ThemeProvider>

@@ -5,7 +5,8 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../src/contexts/AuthContext';
 
 function SignupPage() {
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const { register, isAuthenticated } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');

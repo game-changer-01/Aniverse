@@ -7,7 +7,8 @@ const seasons = ['Winter','Spring','Summer','Fall'];
 const years = Array.from({ length: 20 }, (_, i) => 2025 - i);
 
 export default function CatalogPage() {
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const [year, setYear] = useState('');
   const [season, setSeason] = useState('');
   const [genre, setGenre] = useState('');

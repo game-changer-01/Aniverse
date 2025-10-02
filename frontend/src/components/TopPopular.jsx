@@ -4,7 +4,8 @@ import PosterImage from './PosterImage';
 import { useRouter } from 'next/router';
 
 export default function TopPopular() {
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

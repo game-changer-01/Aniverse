@@ -19,4 +19,10 @@ router.get('/similar/:animeId', c.getSimilarAnimes);
 // Get recommendation statistics for user
 router.get('/stats', protect, c.getRecommendationStats);
 
+// New recommendation modes
+router.get('/smart-mix', optionalAuth, c.getSmartMix);
+router.get('/content-based', c.getContentBased);
+router.get('/community', c.getCommunityFavorites);
+router.get('/trending', c.getTrending);
+
 module.exports = router;
