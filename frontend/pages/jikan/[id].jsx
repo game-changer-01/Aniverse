@@ -4,8 +4,9 @@ import axios from 'axios';
 import PosterImage from '../../src/components/PosterImage';
 
 export default function JikanAnimeDetailsPage() {
-  const router = useRouter();
-  const { id } = router.query;
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
+  const { id } = router?.query || {};
   const [anime, setAnime] = useState(null);
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading] = useState(true);

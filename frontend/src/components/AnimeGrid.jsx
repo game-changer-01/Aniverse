@@ -6,7 +6,8 @@ import AnimeDetailsModal from './AnimeDetailsModal';
 
 // Simple grid to list some anime from /api/anime
 export default function AnimeGrid({ onSelectAnime, pageSize = 24, search = '' }) {
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const [animes, setAnimes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

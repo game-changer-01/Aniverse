@@ -27,7 +27,8 @@ const Layout = ({ children }) => {
 };
 
 const Header = () => {
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const { isDark, toggleTheme } = useTheme();
   const [q, setQ] = useState('');
   const [showSearch, setShowSearch] = useState(false);

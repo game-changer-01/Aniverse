@@ -27,7 +27,8 @@ const algorithms = [
 ];
 
 const RecommendationsPage = () => {
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const toast = useToast();
   const [user, setUser] = useState(null);
   const [recommendations, setRecommendations] = useState([]);

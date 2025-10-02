@@ -4,9 +4,16 @@ import { useRouter } from 'next/router';
 
 const UserProfile = ({ collapsed }) => {
   const { user, isAuthenticated, logout } = useAuth();
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const [showMenu, setShowMenu] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const menuRef = useRef(null);
+
+  // Track mount state
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -22,20 +29,22 @@ const UserProfile = ({ collapsed }) => {
   const handleLogout = () => {
     logout();
     setShowMenu(false);
-    router.push('/');
+    if (isMounted && router) {
+      router.push('/');
+    }
   };
 
   if (!isAuthenticated || !user) {
     return (
       <div className="auth-buttons">
         <button 
-          onClick={() => router.push('/auth/login')}
+          onClick={() => isMounted && router && router.push('/auth/login')}
           className="login-btn"
         >
           Login
         </button>
         <button 
-          onClick={() => router.push('/auth/signup')}
+          onClick={() => isMounted && router && router.push('/auth/signup')}
           className="signup-btn"
         >
           Sign Up
@@ -116,7 +125,9 @@ const UserProfile = ({ collapsed }) => {
             className="menu-item"
             onClick={() => {
               setShowMenu(false);
-              router.push('/dashboard/user');
+              if (isMounted && router) {
+                router.push('/dashboard/user');
+              }
             }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -128,7 +139,9 @@ const UserProfile = ({ collapsed }) => {
             className="menu-item"
             onClick={() => {
               setShowMenu(false);
-              router.push('/dashboard/user');
+              if (isMounted && router) {
+                router.push('/dashboard/user');
+              }
             }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

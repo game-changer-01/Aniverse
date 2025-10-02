@@ -4,7 +4,8 @@ import Layout from '../../src/components/Layout';
 import { useAuth } from '../../src/contexts/AuthContext';
 
 const AdminDashboard = () => {
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const { user, token } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);

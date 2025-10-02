@@ -20,7 +20,8 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
   const [videoIndex, setVideoIndex] = useState(() => Math.floor(Math.random() * 3));
   const currentVideoSrc = playlist[videoIndex];
   const [isLoaded, setIsLoaded] = useState(false);
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
 
   useEffect(() => {
     // Removed particle creation per new design (clean video background)

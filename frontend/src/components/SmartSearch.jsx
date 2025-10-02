@@ -10,7 +10,8 @@ const SmartSearch = ({ isOpen, onClose }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [recentSearches, setRecentSearches] = useState([]);
   const inputRef = useRef(null);
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const debounceTimer = useRef(null);
 
   // Load recent searches from localStorage

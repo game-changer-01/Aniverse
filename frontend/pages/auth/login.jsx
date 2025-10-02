@@ -5,7 +5,8 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../src/contexts/AuthContext';
 
 export default function LoginPage() {
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const { login, googleLogin, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -4,7 +4,8 @@ import SkeletonCard from './SkeletonCard';
 import { useRouter } from 'next/router';
 
 const RecommendationModes = () => {
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const [activeMode, setActiveMode] = useState('smart-mix');
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);

@@ -10,7 +10,8 @@ import anime from 'animejs';
 
 export default function App({ Component, pageProps }) {
   const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
-  const router = useRouter();
+  // Conditional router - only use on client-side
+  const router = typeof window !== 'undefined' ? useRouter() : null;
   const overlayRef = useRef(null);
   const [isMounted, setIsMounted] = useState(false);
 
