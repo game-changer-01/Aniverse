@@ -313,3 +313,192 @@ button {
     transform: translateY(0); 
   } 
 }
+
+/* === CLERK AUTHENTICATION STYLING === */
+.auth-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(227, 199, 112, 0.1), transparent 50%);
+  pointer-events: none;
+}
+
+.auth-container {
+  max-width: 480px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-header {
+  margin-bottom: 2rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+}
+
+.back-link:hover {
+  color: var(--luxury-gold);
+}
+
+.back-link .material-icons {
+  font-size: 20px;
+}
+
+.auth-content {
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(227, 199, 112, 0.2);
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.auth-branding {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.brand-title {
+  font-family: 'Japan Ramen', 'Inter', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin: 0 0 0.5rem;
+  background: linear-gradient(135deg, #5856d6 0%, #dd2a7b 50%, #ffd700 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 2px;
+}
+
+.brand-subtitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--luxury-gold);
+  margin: 0 0 0.5rem;
+}
+
+.brand-description {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+.clerk-wrapper {
+  margin-top: 2rem;
+}
+
+/* Clerk component customization */
+.cl-rootBox {
+  width: 100%;
+}
+
+.cl-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.cl-headerTitle {
+  color: #ffffff !important;
+  font-size: 1.5rem !important;
+}
+
+.cl-headerSubtitle {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.cl-socialButtonsBlockButton {
+  background: rgba(227, 199, 112, 0.1) !important;
+  border: 1.5px solid var(--luxury-gold) !important;
+  color: #ffffff !important;
+  transition: all 0.3s !important;
+}
+
+.cl-socialButtonsBlockButton:hover {
+  background: linear-gradient(135deg, var(--luxury-gold), var(--luxury-rose)) !important;
+  transform: translateY(-2px);
+}
+
+.cl-formButtonPrimary {
+  background: linear-gradient(135deg, var(--luxury-gold), var(--luxury-rose)) !important;
+  border: none !important;
+  font-weight: 700 !important;
+  transition: all 0.3s !important;
+}
+
+.cl-formButtonPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(227, 199, 112, 0.4) !important;
+}
+
+.cl-footerActionLink {
+  color: var(--luxury-gold) !important;
+}
+
+.cl-footerActionLink:hover {
+  color: var(--luxury-rose) !important;
+}
+
+.cl-formFieldInput {
+  background: rgba(22, 33, 62, 0.6) !important;
+  border: 1.5px solid rgba(227, 199, 112, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.cl-formFieldInput:focus {
+  border-color: var(--luxury-gold) !important;
+  box-shadow: 0 0 0 2px rgba(227, 199, 112, 0.2) !important;
+}
+
+.cl-formFieldLabel {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.cl-identityPreviewText {
+  color: #ffffff !important;
+}
+
+@media (max-width: 600px) {
+  .auth-content {
+    padding: 2rem 1.5rem;
+  }
+  
+  .brand-title {
+    font-size: 2rem;
+  }
+  
+  .brand-subtitle {
+    font-size: 1.25rem;
+  }
+}
+
+/* Loading state for auth pages */
+.loading-auth {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  color: var(--luxury-gold);
+  font-size: 1.2rem;
+  font-weight: 600;
+}

@@ -89,3 +89,67 @@ exports.getEpisodes = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.search = async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    const limit = Math.max(1, Math.min(50, parseInt(req.query.limit, 10) || 10));
+    
+    if (!query.trim()) {
+      return res.json([]);
+    }
+
+    // Create a case-insensitive regex for flexible matching
+    const searchRegex = new RegExp(query.trim().split('').join('.*'), 'i');
+    const wordSearchRegex = new RegExp(query.trim().split(/\s+/).join('|'), 'i');
+    
+    // Search by title with multiple strategies
+    const results = await Anime.find({
+      $or: [
+        { title: { $regex: query.trim(), $options: 'i' } }, // Contains search term
+        { title: { $regex: `^${query.trim()}`, $options: 'i' } }, // Starts with
+        { title: searchRegex }, // Fuzzy match (letters in order)
+        { title_english: { $regex: query.trim(), $options: 'i' } },
+        { title_japanese: { $regex: query.trim(), $options: 'i' } },
+        { genres: { $regex: wordSearchRegex } }, // Genre match
+        { synopsis: { $regex: wordSearchRegex } } // Synopsis match
+      ]
+    })
+    .select('title title_english image mal_id year rating genres type episodes status')
+    .limit(limit)
+    .lean();
+
+    // Score and sort results by relevance
+    const scoredResults = results.map(anime => {
+      let score = 0;
+      const lowerQuery = query.toLowerCase().trim();
+      const lowerTitle = (anime.title || '').toLowerCase();
+      
+      // Exact match
+      if (lowerTitle === lowerQuery) score += 1000;
+      
+      // Starts with query
+      else if (lowerTitle.startsWith(lowerQuery)) score += 500;
+      
+      // Contains full query
+      else if (lowerTitle.includes(lowerQuery)) score += 250;
+      
+      // Word match
+      const queryWords = lowerQuery.split(/\s+/);
+      const matchedWords = queryWords.filter(word => lowerTitle.includes(word)).length;
+      score += matchedWords * 50;
+      
+      // Boost by popularity (rating)
+      if (anime.rating) score += anime.rating * 10;
+      
+      return { ...anime, searchScore: score };
+    });
+
+    // Sort by search score
+    scoredResults.sort((a, b) => b.searchScore - a.searchScore);
+
+    res.json(scoredResults);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

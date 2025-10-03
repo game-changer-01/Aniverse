@@ -6,7 +6,6 @@ import PosterImage from '../src/components/PosterImage';
 import RecommendationHero from '../src/components/RecommendationHero';
 import ThreeBackground from '../src/components/ThreeBackground';
 import AnimeGrid from '../src/components/AnimeGrid';
-import TopPopular from '../src/components/TopPopular';
 import ReviewSystem from '../src/components/ReviewSystem';
 import SeasonRoadmap, { SEASONS } from '../src/components/SeasonRoadmap';
 import RecommendationModes from '../src/components/RecommendationModes';
@@ -135,6 +134,22 @@ const RecommendationsPage = () => {
         }
       } catch { /* ignore */ }
     })();
+
+    // Listen for custom roadmap event from RecommendationModes
+    const handleShowRoadmap = (event) => {
+      const animeData = event.detail;
+      handleSelectAnime(animeData);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('showRoadmap', handleShowRoadmap);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('showRoadmap', handleShowRoadmap);
+      }
+    };
   }, []);
 
   const fetchUserData = async (token) => {
@@ -432,13 +447,15 @@ const RecommendationsPage = () => {
     try {
       const justAuthed = localStorage.getItem('aniverse.justAuthed');
       const hash = window.location.hash;
-      if (justAuthed === '1' || hash === '#browse') {
+      if (justAuthed === '1' || hash === '#browse' || hash === '#choose-style') {
         localStorage.removeItem('aniverse.justAuthed');
-        const el = document.getElementById('browse');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else if (hash === '#choose-style') {
-        const el = document.getElementById('choose-style');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Use a timeout to ensure the element is rendered
+        setTimeout(() => {
+          const el = document.getElementById('browse');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
       }
     } catch {}
   }, []);
@@ -486,16 +503,6 @@ const RecommendationsPage = () => {
           {/* New: Advanced Recommendation Modes */}
           <section className="recommendation-modes-section" id="browse-section">
             <RecommendationModes />
-          </section>
-          {/* Top 500 Popular (Japan) */}
-          <section className="top-popular" id="top-popular-section">
-            <div className="top-popular-header">
-              <div>
-                <h2>Top Popular Anime</h2>
-                <p className="hint">Discover the most beloved anime series from Japan</p>
-              </div>
-            </div>
-            <TopPopular />
           </section>
         </>
       ) : (
@@ -724,46 +731,6 @@ const RecommendationsPage = () => {
 
         .skeleton-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem; padding:2rem; max-width:1200px; margin:0 auto; }
 
-        .top-popular { 
-          max-width:1300px; 
-          margin:0 auto; 
-          padding:4rem 1.5rem 3rem;
-          background:var(--color-bg);
-          position: relative;
-          z-index: 10;
-        }
-        
-        .top-popular-header { 
-          display:flex; 
-          align-items:baseline; 
-          justify-content:space-between; 
-          gap:1rem; 
-          margin-bottom:2rem;
-          text-align: center;
-        }
-        
-        .top-popular-header h2 { 
-          margin:0 auto; 
-          font-size:2.5rem; 
-          font-weight: 900;
-          color:var(--color-text); 
-          background:linear-gradient(135deg, #5856d6 0%, #dd2a7b 50%, #ffd700 100%);
-          -webkit-background-clip:text;
-          -webkit-text-fill-color:transparent;
-          background-clip:text;
-          letter-spacing: -0.5px;
-          text-transform: uppercase;
-        }
-        
-        .top-popular-header .hint { 
-          margin:0.5rem 0 0; 
-          font-size: 1rem;
-          color:rgba(255, 255, 255, 0.6); 
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          font-weight: 500;
-        }
-
   .profile-pill { max-width:1300px; margin:0 auto; padding:0 2rem 0.5rem; display:flex; align-items:center; gap:.5rem; color:var(--color-text-dim); }
   .profile-pill .avatar { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background:var(--color-surface); border:1px solid var(--color-border); }
   .profile-pill .name { font-size:.9rem; letter-spacing:.4px; margin-right:.5rem; }
@@ -859,16 +826,6 @@ const RecommendationsPage = () => {
         .start-btn > * { 
           position: relative; 
           z-index: 1; 
-        }
-
-        @media (max-width: 768px) {
-          .top-popular-header h2 {
-            font-size: 1.75rem;
-          }
-
-          .top-popular-header .hint {
-            font-size: 0.875rem;
-          }
         }
       `}</style>
       {/* dynamic background image for styled-jsx */}

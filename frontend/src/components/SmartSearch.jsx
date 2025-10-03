@@ -96,8 +96,8 @@ const SmartSearch = ({ isOpen, onClose }) => {
     try {
       // Search from multiple sources
       const [jikanRes, localRes] = await Promise.allSettled([
-        axios.get(`/api/jikan/search?q=${encodeURIComponent(searchQuery)}&limit=10`),
-        axios.get(`/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=10`)
+        axios.get(`/api/jikan/search?q=${encodeURIComponent(searchQuery)}&limit=15`),
+        axios.get(`/api/anime/search?q=${encodeURIComponent(searchQuery)}&limit=15`)
       ]);
 
       let allResults = [];
@@ -107,11 +107,14 @@ const SmartSearch = ({ isOpen, onClose }) => {
         allResults = jikanRes.value.data.data.map(item => ({
           mal_id: item.mal_id,
           title: item.title,
+          title_english: item.title_english,
           image: item.images?.jpg?.image_url || item.images?.jpg?.large_image_url,
           year: item.year || item.aired?.prop?.from?.year,
           score: item.score,
           type: item.type,
           episodes: item.episodes,
+          genres: item.genres?.map(g => g.name) || [],
+          synopsis: item.synopsis,
           source: 'jikan'
         }));
       }
@@ -122,10 +125,14 @@ const SmartSearch = ({ isOpen, onClose }) => {
           _id: item._id,
           mal_id: item.mal_id,
           title: item.title,
+          title_english: item.title_english,
           image: item.image,
           year: item.year,
           score: item.rating,
-          genres: item.genres,
+          genres: item.genres || [],
+          type: item.type,
+          episodes: item.episodes,
+          synopsis: item.synopsis,
           source: 'local'
         }));
         allResults = [...allResults, ...localAnime];
@@ -148,7 +155,7 @@ const SmartSearch = ({ isOpen, onClose }) => {
 
       scored.sort((a, b) => b.relevance - a.relevance);
 
-      setResults(scored.slice(0, 8)); // Top 8 results
+      setResults(scored.slice(0, 12)); // Top 12 results
       setSelectedIndex(0);
     } catch (error) {
       console.error('Search error:', error);
@@ -302,6 +309,9 @@ const SmartSearch = ({ isOpen, onClose }) => {
 
             {!loading && results.length > 0 && (
               <div className="results-list">
+                <div className="results-header">
+                  <span className="results-count">{results.length} results found</span>
+                </div>
                 {results.map((result, idx) => (
                   <div
                     key={result.mal_id || result._id}
@@ -310,16 +320,28 @@ const SmartSearch = ({ isOpen, onClose }) => {
                     onMouseEnter={() => setSelectedIndex(idx)}
                   >
                     {result.image && (
-                      <img src={result.image} alt="" className="result-image" />
+                      <div className="result-image-wrapper">
+                        <img src={result.image} alt={result.title} className="result-image" />
+                      </div>
                     )}
                     <div className="result-info">
                       <div className="result-title">{result.title}</div>
+                      {result.title_english && result.title !== result.title_english && (
+                        <div className="result-subtitle">{result.title_english}</div>
+                      )}
                       <div className="result-meta">
-                        {result.year && <span>{result.year}</span>}
-                        {result.type && <span>{result.type}</span>}
-                        {result.score && <span>⭐ {result.score}</span>}
-                        {result.episodes && <span>{result.episodes} eps</span>}
+                        {result.year && <span className="meta-year">{result.year}</span>}
+                        {result.type && <span className="meta-type">{result.type}</span>}
+                        {result.score && <span className="meta-score">⭐ {result.score.toFixed(1)}</span>}
+                        {result.episodes && <span className="meta-episodes">{result.episodes} eps</span>}
                       </div>
+                      {result.genres && result.genres.length > 0 && (
+                        <div className="result-genres">
+                          {result.genres.slice(0, 3).map((genre, gIdx) => (
+                            <span key={gIdx} className="genre-tag">{genre}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <svg className="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path d="m9 18 6-6-6-6" />
@@ -607,9 +629,22 @@ const SmartSearch = ({ isOpen, onClose }) => {
           gap: 6px;
         }
 
+        .results-header {
+          padding: 8px 14px 12px;
+          margin-bottom: 4px;
+        }
+
+        .results-count {
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.5);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
         .result-item {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 14px;
           padding: 12px 14px;
           border-radius: 12px;
@@ -634,6 +669,7 @@ const SmartSearch = ({ isOpen, onClose }) => {
 
         .recent-item {
           background: rgba(255, 255, 255, 0.02);
+          align-items: center;
         }
 
         .clock-icon {
@@ -644,12 +680,16 @@ const SmartSearch = ({ isOpen, onClose }) => {
           stroke-width: 2;
         }
 
+        .result-image-wrapper {
+          flex-shrink: 0;
+          position: relative;
+        }
+
         .result-image {
           width: 56px;
           height: 80px;
           object-fit: cover;
           border-radius: 8px;
-          flex-shrink: 0;
           background: rgba(255, 255, 255, 0.05);
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -672,6 +712,15 @@ const SmartSearch = ({ isOpen, onClose }) => {
           line-height: 1.4;
         }
 
+        .result-subtitle {
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.5);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-style: italic;
+        }
+
         .result-meta {
           display: flex;
           align-items: center;
@@ -685,6 +734,38 @@ const SmartSearch = ({ isOpen, onClose }) => {
           display: flex;
           align-items: center;
           gap: 4px;
+          white-space: nowrap;
+        }
+
+        .meta-score {
+          color: #ffd700;
+          font-weight: 600;
+        }
+
+        .meta-type {
+          padding: 2px 8px;
+          background: rgba(88, 86, 214, 0.2);
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+
+        .result-genres {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+          margin-top: 2px;
+        }
+
+        .genre-tag {
+          padding: 3px 10px;
+          background: rgba(255, 215, 0, 0.1);
+          border: 1px solid rgba(255, 215, 0, 0.3);
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.8);
           white-space: nowrap;
         }
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const c = require('../controllers/animeController');
 
+router.get('/search', c.search);
 router.get('/', c.getAll);
 router.get('/featured', c.getFeatured);
 router.get('/trending', c.getTrending);

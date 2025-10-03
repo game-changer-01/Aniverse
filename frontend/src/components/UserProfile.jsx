@@ -1,14 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useUser, useClerk } from '@clerk/nextjs';
 import { useRouter } from 'next/router';
 
 const UserProfile = ({ collapsed }) => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user: legacyUser, isAuthenticated: legacyAuth, logout: legacyLogout } = useAuth();
+  const { user: clerkUser, isSignedIn: clerkSignedIn } = useUser();
+  const { signOut } = useClerk();
   // Conditional router - only use on client-side
   const router = typeof window !== 'undefined' ? useRouter() : null;
   const [showMenu, setShowMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const menuRef = useRef(null);
+
+  // Use Clerk user if available, otherwise fall back to legacy auth
+  const user = clerkSignedIn && clerkUser 
+    ? {
+        username: clerkUser.username || clerkUser.firstName || clerkUser.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'User',
+        email: clerkUser.emailAddresses?.[0]?.emailAddress || '',
+        avatar: clerkUser.imageUrl,
+        firstName: clerkUser.firstName,
+        lastName: clerkUser.lastName,
+      }
+    : legacyUser;
+  
+  const isAuthenticated = clerkSignedIn || legacyAuth;
 
   // Track mount state
   useEffect(() => {
@@ -26,9 +42,13 @@ const UserProfile = ({ collapsed }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
     setShowMenu(false);
+    if (clerkSignedIn) {
+      await signOut();
+    } else if (legacyAuth) {
+      legacyLogout();
+    }
     if (isMounted && router) {
       router.push('/');
     }
@@ -66,20 +86,26 @@ const UserProfile = ({ collapsed }) => {
           }
           .login-btn {
             background: transparent;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            position: relative;
+            z-index: 3;
           }
           .login-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(227, 199, 112, 0.1);
+            border-color: var(--luxury-gold);
+            box-shadow: 0 0 8px rgba(227, 199, 112, 0.3);
           }
           .signup-btn {
-            background: linear-gradient(135deg, #5856d6, #dd2a7b);
+            background: linear-gradient(135deg, var(--luxury-gold), var(--luxury-rose));
             color: white;
+            border: 1px solid transparent;
+            position: relative;
+            z-index: 3;
           }
           .signup-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(88, 86, 214, 0.4);
+            box-shadow: 0 4px 12px rgba(227, 199, 112, 0.5);
           }
         `}</style>
       </div>
@@ -177,13 +203,14 @@ const UserProfile = ({ collapsed }) => {
           transition: background 0.2s ease;
         }
         .profile-trigger:hover {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(227, 199, 112, 0.1);
+          border-radius: 12px;
         }
         .user-avatar {
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #5856d6, #dd2a7b);
+          background: linear-gradient(135deg, var(--luxury-gold), var(--luxury-rose));
           color: white;
           display: flex;
           align-items: center;
@@ -191,6 +218,8 @@ const UserProfile = ({ collapsed }) => {
           font-weight: 700;
           font-size: 0.875rem;
           flex-shrink: 0;
+          box-shadow: 0 0 8px rgba(227, 199, 112, 0.4);
+          border: 2px solid rgba(255, 215, 0, 0.3);
         }
         .user-name {
           font-size: 0.875rem;
@@ -198,25 +227,48 @@ const UserProfile = ({ collapsed }) => {
           color: var(--color-text, white);
         }
         .dropdown-icon {
-          color: rgba(255, 255, 255, 0.7);
-          transition: transform 0.2s ease;
+          color: var(--color-text-dim);
+          transition: transform 0.2s ease, color 0.2s ease;
         }
         .profile-trigger:hover .dropdown-icon {
-          color: white;
+          color: var(--luxury-gold);
         }
         .profile-menu {
           position: absolute;
           top: calc(100% + 8px);
           right: 0;
-          min-width: 240px;
-          background: rgba(18, 18, 18, 0.98);
-          backdrop-filter: blur(20px);
+          min-width: 200px;
+          width: 200px;
+          background: var(--color-surface);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
           border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+          border: 2px solid transparent;
+          background-clip: padding-box;
+          box-shadow: 0 8px 32px var(--color-shadow), 0 0 0 1px var(--color-glass) inset;
           padding: 0.5rem;
           z-index: 1000;
           animation: menuSlideIn 0.2s ease;
+        }
+        .profile-menu::before {
+          content: "";
+          position: absolute;
+          inset: -2px;
+          padding: 2px;
+          background: linear-gradient(135deg, var(--luxury-gold), var(--luxury-rose), var(--luxury-gold));
+          background-size: 200% 200%;
+          border-radius: inherit;
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask-composite: xor;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          animation: goldenBorder 3s ease-in-out infinite;
+          z-index: -1;
+          pointer-events: none;
+        }
+        @keyframes goldenBorder {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
         }
         @keyframes menuSlideIn {
           from {
@@ -231,78 +283,85 @@ const UserProfile = ({ collapsed }) => {
         .menu-header {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem;
+          gap: 0.5rem;
+          padding: 0.5rem;
         }
         .menu-avatar {
-          width: 40px;
-          height: 40px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #5856d6, #dd2a7b);
+          background: linear-gradient(135deg, var(--luxury-gold), var(--luxury-rose));
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 700;
-          font-size: 1rem;
+          font-size: 0.875rem;
           flex-shrink: 0;
+          box-shadow: 0 0 8px rgba(227, 199, 112, 0.4);
+          border: 2px solid rgba(255, 215, 0, 0.3);
         }
         .menu-user-info {
           flex: 1;
           min-width: 0;
         }
         .menu-username {
-          font-size: 0.875rem;
+          font-size: 0.8rem;
           font-weight: 600;
-          color: white;
+          color: var(--color-text);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .menu-email {
-          font-size: 0.75rem;
-          color: rgba(255, 255, 255, 0.6);
+          font-size: 0.7rem;
+          color: var(--color-text-dim);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .menu-divider {
           height: 1px;
-          background: rgba(255, 255, 255, 0.1);
+          background: linear-gradient(90deg, transparent, var(--luxury-gold), transparent);
           margin: 0.5rem 0;
+          opacity: 0.3;
         }
         .menu-item {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
           width: 100%;
-          padding: 0.75rem;
+          padding: 0.5rem 0.6rem;
           background: transparent;
           border: none;
           border-radius: 8px;
-          color: rgba(255, 255, 255, 0.9);
-          font-size: 0.875rem;
+          color: var(--color-text);
+          font-size: 0.8rem;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s ease;
           text-align: left;
         }
         .menu-item:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
+          background: linear-gradient(90deg, rgba(227, 199, 112, 0.15), rgba(227, 199, 112, 0.05));
+          color: var(--color-text);
+          transform: translateX(4px);
         }
         .menu-item svg {
           flex-shrink: 0;
           opacity: 0.8;
+          width: 14px;
+          height: 14px;
         }
         .menu-item:hover svg {
           opacity: 1;
         }
         .menu-item.logout {
-          color: #ff4444;
+          color: #ff6b6b;
         }
         .menu-item.logout:hover {
-          background: rgba(255, 68, 68, 0.1);
+          background: linear-gradient(90deg, rgba(255, 107, 107, 0.15), rgba(255, 107, 107, 0.05));
+          color: #ff4444;
         }
       `}</style>
     </div>

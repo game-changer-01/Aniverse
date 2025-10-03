@@ -58,12 +58,14 @@ const RecommendationModes = () => {
 
   const fetchRecommendations = async (mode) => {
     setLoading(true);
+    setRecommendations([]); // Clear previous recommendations
+    
     try {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
       let endpoint = '';
-      let params = { limit: 20 };
+      let params = { limit: 24 }; // 6x4 grid for small compact cards
 
       switch (mode) {
         case 'smart-mix':
@@ -78,20 +80,32 @@ const RecommendationModes = () => {
           break;
         case 'trending':
           endpoint = '/api/recommend/trending';
-          params.limit = 10;
           break;
       }
 
+      console.log(`Fetching from ${endpoint} with params:`, params);
       const response = await axios.get(endpoint, { headers, params });
-      setRecommendations(response.data.recommendations || []);
+      console.log('Response data:', response.data);
+      
+      const recs = response.data.recommendations || [];
+      setRecommendations(recs);
       setModeInfo({
         message: response.data.message,
         year: response.data.year,
-        period: response.data.period
+        period: response.data.period,
+        season: response.data.season
       });
+      
+      if (recs.length === 0) {
+        console.warn('No recommendations returned from API');
+      }
     } catch (error) {
-      console.error('Error fetching recommendations:', error);
+      console.error('Error fetching recommendations:', error.response?.data || error.message);
       setRecommendations([]);
+      setModeInfo({
+        message: 'Failed to load recommendations. Please try again.',
+        error: true
+      });
     } finally {
       setLoading(false);
     }
@@ -161,17 +175,26 @@ const RecommendationModes = () => {
           <div className="banner-icon">{currentMode.icon}</div>
           <div className="banner-content">
             <h3>{currentMode.name}</h3>
-            <p>{modeInfo.message}</p>
+            <p>{modeInfo.message || currentMode.description}</p>
             {modeInfo.year && <span className="year-badge">Year: {modeInfo.year}</span>}
             {modeInfo.period && <span className="period-badge">{modeInfo.period}</span>}
+            {modeInfo.season && <span className="period-badge">{modeInfo.season.charAt(0).toUpperCase() + modeInfo.season.slice(1)} Season</span>}
           </div>
+        </div>
+      )}
+      
+      {/* Loading indicator */}
+      {loading && (
+        <div className="loading-indicator">
+          <div className="spinner"></div>
+          <p>Loading anime recommendations...</p>
         </div>
       )}
 
       {/* Recommendations Grid */}
       <div className="recommendations-grid">
         {loading ? (
-          Array.from({ length: activeMode === 'trending' ? 10 : 20 }).map((_, i) => (
+          Array.from({ length: 16 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))
         ) : recommendations.length > 0 ? (
@@ -185,10 +208,11 @@ const RecommendationModes = () => {
               </div>
               <div className="recommendation-card">
                 <div className="card-poster">
-                  {anime.image || anime.images?.jpg?.large_image_url ? (
+                  {(anime.image || anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url) ? (
                     <img 
                       src={anime.image || anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url} 
-                      alt={anime.title}
+                      alt={anime.title || anime.title_english || 'Anime'}
+                      loading="lazy"
                       onError={(e) => {
                         e.target.style.display = 'none';
                         e.target.parentElement.classList.add('no-image');
@@ -203,12 +227,16 @@ const RecommendationModes = () => {
                   )}
                 </div>
                 <div className="card-info">
-                  <h4 className="card-title">{anime.title}</h4>
+                  <h4 className="card-title">{anime.title || anime.title_english || 'Unknown Title'}</h4>
                   <div className="card-meta">
-                    {anime.rating && <span className="rating">⭐ {anime.rating}</span>}
-                    {anime.score && <span className="rating">⭐ {anime.score}</span>}
-                    {anime.year && <span className="year">{anime.year}</span>}
+                    {(anime.rating || anime.score) && (
+                      <span className="rating">
+                        ⭐ {typeof (anime.score || anime.rating) === 'number' ? (anime.score || anime.rating).toFixed(1) : (anime.score || anime.rating)}
+                      </span>
+                    )}
+                    {(anime.year || anime.aired?.prop?.from?.year) && <span className="year">{anime.year || anime.aired?.prop?.from?.year}</span>}
                     {anime.type && <span className="type">{anime.type}</span>}
+                    {anime.episodes && <span className="episodes">{anime.episodes} eps</span>}
                   </div>
                   {anime.genres && anime.genres.length > 0 && (
                     <div className="card-genres">
@@ -234,14 +262,17 @@ const RecommendationModes = () => {
                       onClick={(e) => {
                         e.stopPropagation();
                         if (!isMounted || !router) return;
-                        const animeData = encodeURIComponent(JSON.stringify({
+                        const animeData = {
                           _id: anime._id,
                           mal_id: anime.mal_id,
                           title: anime.title,
                           image: anime.image || anime.images?.jpg?.large_image_url,
                           poster: anime.image || anime.images?.jpg?.large_image_url
-                        }));
-                        router.push(`/recommendations?anime=${anime._id || anime.mal_id}&data=${animeData}`);
+                        };
+                        // Dispatch a custom event to trigger roadmap display
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new CustomEvent('showRoadmap', { detail: animeData }));
+                        }
                       }}
                     >
                       🗺️ Roadmap
@@ -251,7 +282,7 @@ const RecommendationModes = () => {
               </div>
             </div>
           ))
-        ) : (
+        ) : !loading && recommendations.length === 0 ? (
           <div className="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -259,12 +290,14 @@ const RecommendationModes = () => {
             <p>No recommendations available</p>
             <span>Try a different mode or year</span>
           </div>
-        )}
+        ) : null}
       </div>
 
       <style jsx>{`
         .recommendation-modes {
-          padding: 3rem 0 2rem;
+          padding: 3rem 1.5rem 2rem;
+          max-width: 1800px;
+          margin: 0 auto;
         }
 
         .main-heading {
@@ -504,27 +537,78 @@ const RecommendationModes = () => {
           margin-right: 0.5rem;
         }
 
+        .loading-indicator {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem 2rem;
+          color: var(--color-text, white);
+        }
+
+        .spinner {
+          width: 50px;
+          height: 50px;
+          border: 4px solid rgba(227, 199, 112, 0.2);
+          border-top-color: var(--luxury-gold, #e3c770);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .loading-indicator p {
+          font-size: 1rem;
+          opacity: 0.8;
+        }
+
         .recommendations-grid {
           display: grid;
           grid-template-columns: repeat(6, 1fr);
-          gap: 1.5rem;
+          gap: 1rem;
+          margin-top: 2rem;
+          padding: 0;
+          min-height: 200px;
+          max-width: 1600px;
+          margin-left: auto;
+          margin-right: auto;
         }
 
         @media (max-width: 1400px) {
           .recommendations-grid {
             grid-template-columns: repeat(5, 1fr);
+            gap: 0.9rem;
           }
         }
 
-        @media (max-width: 1200px) {
+        @media (max-width: 1100px) {
           .recommendations-grid {
             grid-template-columns: repeat(4, 1fr);
+            gap: 0.85rem;
           }
         }
 
         @media (max-width: 900px) {
           .recommendations-grid {
             grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .recommendations-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.7rem;
+          }
+        }
+
+        @media (max-width: 400px) {
+          .recommendations-grid {
+            grid-template-columns: repeat(1, 1fr);
+            gap: 0.6rem;
           }
         }
 
@@ -534,15 +618,15 @@ const RecommendationModes = () => {
 
         .rank-badge {
           position: absolute;
-          top: 8px;
-          left: 8px;
+          top: 6px;
+          left: 6px;
           z-index: 10;
-          padding: 0.25rem 0.75rem;
-          border-radius: 20px;
-          font-size: 0.875rem;
+          padding: 0.25rem 0.55rem;
+          border-radius: 12px;
+          font-size: 0.7rem;
           font-weight: 700;
           color: white;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
         .empty-state {
@@ -552,21 +636,27 @@ const RecommendationModes = () => {
           align-items: center;
           justify-content: center;
           padding: 4rem 2rem;
-          color: var(--color-text-secondary);
+          color: var(--color-text-secondary, rgba(255, 255, 255, 0.6));
+          background: var(--color-surface, rgba(30, 30, 30, 0.5));
+          border-radius: 16px;
+          border: 2px dashed var(--color-border, rgba(255, 255, 255, 0.1));
+          min-height: 300px;
         }
 
         .empty-state svg {
-          width: 64px;
-          height: 64px;
-          margin-bottom: 1rem;
-          opacity: 0.5;
+          width: 80px;
+          height: 80px;
+          margin-bottom: 1.5rem;
+          opacity: 0.4;
           stroke-width: 1.5;
+          color: var(--luxury-gold, #e3c770);
         }
 
         .empty-state p {
-          font-size: 1.125rem;
+          font-size: 1.25rem;
           font-weight: 600;
           margin: 0 0 0.5rem;
+          color: var(--color-text, white);
         }
 
         .empty-state span {
@@ -575,44 +665,72 @@ const RecommendationModes = () => {
         }
 
         .recommendation-card {
-          background: linear-gradient(145deg, rgba(18, 18, 18, 0.95), rgba(30, 30, 30, 0.9));
-          border-radius: 16px;
+          background: var(--color-surface, linear-gradient(145deg, rgba(18, 18, 18, 0.95), rgba(30, 30, 30, 0.9)));
+          border-radius: 10px;
           overflow: hidden;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           cursor: pointer;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
           height: 100%;
           display: flex;
           flex-direction: column;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 2px 10px var(--color-shadow, rgba(0, 0, 0, 0.3)),
+                      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
           backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          position: relative;
+          z-index: 1;
+        }
+
+        .recommendation-card::before {
+          content: '';
+          position: absolute;
+          inset: -1px;
+          background: linear-gradient(135deg, var(--luxury-gold), var(--luxury-rose));
+          opacity: 0;
+          border-radius: inherit;
+          transition: opacity 0.3s ease;
+          z-index: -1;
         }
 
         .recommendation-card:hover {
-          transform: translateY(-12px) scale(1.03);
-          box-shadow: 0 20px 60px rgba(88, 86, 214, 0.4),
-                      0 0 0 1px rgba(255, 255, 255, 0.1),
+          transform: translateY(-6px) scale(1.015);
+          box-shadow: 0 12px 36px rgba(227, 199, 112, 0.3),
+                      0 0 0 1px rgba(255, 215, 0, 0.25),
                       inset 0 1px 0 rgba(255, 255, 255, 0.1);
-          border-color: rgba(88, 86, 214, 0.5);
+          border-color: var(--luxury-gold, rgba(227, 199, 112, 0.6));
+        }
+        
+        .recommendation-card:hover::before {
+          opacity: 0.1;
         }
 
         .card-poster {
           position: relative;
           width: 100%;
-          aspect-ratio: 2/3;
+          aspect-ratio: 3/4;
           overflow: hidden;
-          background: linear-gradient(135deg, rgba(88, 86, 214, 0.1), rgba(221, 42, 123, 0.1));
+          background: linear-gradient(135deg, 
+            rgba(227, 199, 112, 0.1), 
+            rgba(221, 42, 123, 0.1),
+            rgba(88, 86, 214, 0.1)
+          );
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .card-poster img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.3s ease;
+          transition: transform 0.3s ease, opacity 0.3s ease;
+          display: block;
         }
 
         .recommendation-card:hover .card-poster img {
           transform: scale(1.1);
+          filter: brightness(1.1);
         }
 
         .no-image-placeholder {
@@ -632,32 +750,32 @@ const RecommendationModes = () => {
         }
 
         .card-info {
-          padding: 1rem;
+          padding: 0.6rem;
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.4rem;
           flex: 1;
         }
 
         .card-title {
-          font-size: 1rem;
+          font-size: 0.85rem;
           font-weight: 600;
           color: var(--color-text, white);
-          line-height: 1.4;
+          line-height: 1.3;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
           text-overflow: ellipsis;
-          min-height: 2.8em;
+          min-height: 3.2em;
           margin: 0;
         }
 
         .card-meta {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          font-size: 0.875rem;
+          gap: 0.35rem;
+          font-size: 0.65rem;
           color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
           flex-wrap: wrap;
         }
@@ -665,7 +783,7 @@ const RecommendationModes = () => {
         .card-meta span {
           display: flex;
           align-items: center;
-          gap: 0.25rem;
+          gap: 0.15rem;
         }
 
         .card-meta .rating {
@@ -680,64 +798,66 @@ const RecommendationModes = () => {
         .card-genres {
           display: flex;
           flex-wrap: wrap;
-          gap: 0.375rem;
+          gap: 0.3rem;
         }
 
         .genre-tag {
-          padding: 0.25rem 0.625rem;
+          padding: 0.2rem 0.5rem;
           background: rgba(88, 86, 214, 0.2);
           border: 1px solid rgba(88, 86, 214, 0.4);
-          border-radius: 12px;
-          font-size: 0.75rem;
+          border-radius: 10px;
+          font-size: 0.65rem;
           color: rgba(255, 255, 255, 0.9);
-          font-weight: 500;
+          font-weight: 600;
           white-space: nowrap;
         }
 
         .card-actions {
           display: flex;
-          gap: 0.5rem;
+          gap: 0.35rem;
           margin-top: auto;
-          padding-top: 0.75rem;
+          padding-top: 0.5rem;
         }
 
         .view-details-btn,
         .roadmap-btn {
           flex: 1;
-          padding: 0.5rem 0.75rem;
+          padding: 0.4rem 0.5rem;
           border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 8px;
-          font-size: 0.75rem;
+          border-radius: 6px;
+          font-size: 0.6rem;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s ease;
           font-family: inherit;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.3px;
         }
 
         .view-details-btn {
-          background: linear-gradient(135deg, rgba(88, 86, 214, 0.3), rgba(88, 86, 214, 0.2));
-          color: rgba(255, 255, 255, 0.9);
+          background: linear-gradient(135deg, rgba(227, 199, 112, 0.25), rgba(221, 170, 51, 0.2));
+          color: rgba(255, 255, 255, 0.95);
         }
 
         .view-details-btn:hover {
-          background: linear-gradient(135deg, rgba(88, 86, 214, 0.5), rgba(88, 86, 214, 0.3));
-          border-color: rgba(88, 86, 214, 0.6);
+          background: linear-gradient(135deg, var(--luxury-gold), var(--luxury-rose));
+          border-color: var(--luxury-gold);
+          color: white;
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(88, 86, 214, 0.3);
+          box-shadow: 0 4px 12px rgba(227, 199, 112, 0.5);
         }
 
         .roadmap-btn {
-          background: linear-gradient(135deg, rgba(221, 42, 123, 0.3), rgba(221, 42, 123, 0.2));
-          color: rgba(255, 255, 255, 0.9);
+          background: linear-gradient(135deg, rgba(221, 42, 123, 0.25), rgba(196, 61, 50, 0.2));
+          color: rgba(255, 255, 255, 0.95);
         }
 
         .roadmap-btn:hover {
-          background: linear-gradient(135deg, rgba(221, 42, 123, 0.5), rgba(221, 42, 123, 0.3));
-          border-color: rgba(221, 42, 123, 0.6);
+          background: linear-gradient(135deg, var(--luxury-rose), var(--luxury-gold));
+          border-color: var(--luxury-rose);
+          color: white;
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(221, 42, 123, 0.3);
+          box-shadow: 0 4px 12px rgba(221, 42, 123, 0.5);
         }
 
         @media (max-width: 768px) {

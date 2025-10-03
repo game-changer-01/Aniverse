@@ -479,162 +479,235 @@ exports.getRecommendationStats = async (req, res) => {
   }
 };
 
-// New: Smart Mix - Balanced genre blend
+// New: Smart Mix - Balanced genre blend using Jikan API
 exports.getSmartMix = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 20;
-    const userId = req.user?._id;
+    const axios = require('axios');
+    const limit = parseInt(req.query.limit) || 25;
     
-    // Get all genres
-    const allGenres = ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'];
+    // Define genres to mix
+    const genreIds = {
+      'Action': 1,
+      'Adventure': 2,
+      'Comedy': 4,
+      'Drama': 8,
+      'Fantasy': 10,
+      'Horror': 14,
+      'Mystery': 7,
+      'Romance': 22,
+      'Sci-Fi': 24,
+      'Slice of Life': 36,
+      'Sports': 30,
+      'Supernatural': 37,
+      'Thriller': 41
+    };
     
-    // If user is logged in, get their preferences
-    let genreWeights = {};
-    if (userId) {
-      const user = await User.findById(userId).populate('interactions.anime');
-      user.interactions.forEach(interaction => {
-        if (interaction.anime?.genres) {
-          interaction.anime.genres.forEach(genre => {
-            genreWeights[genre] = (genreWeights[genre] || 0) + 1;
-          });
+    const genres = Object.keys(genreIds);
+    const perGenre = Math.max(2, Math.ceil(limit / genres.length));
+    let allRecommendations = [];
+    
+    // Fetch anime from each genre
+    for (const genre of genres.slice(0, 8)) { // Use top 8 genres for balance
+      try {
+        const response = await axios.get(`https://api.jikan.moe/v4/anime`, {
+          params: {
+            genres: genreIds[genre],
+            order_by: 'score',
+            sort: 'desc',
+            limit: perGenre,
+            min_score: 7.0,
+            status: 'complete'
+          }
+        });
+        
+        if (response.data?.data) {
+          allRecommendations.push(...response.data.data);
         }
-      });
-    }
-    
-    // Balance genres - get equal representation
-    const perGenre = Math.ceil(limit / allGenres.length);
-    let recommendations = [];
-    
-    for (const genre of allGenres) {
-      const animes = await Anime.find({ genres: genre })
-        .sort({ rating: -1, viewCount: -1 })
-        .limit(perGenre)
-        .lean();
-      recommendations.push(...animes);
+        
+        // Rate limiting - wait 400ms between requests
+        await new Promise(resolve => setTimeout(resolve, 400));
+      } catch (error) {
+        console.error(`Error fetching ${genre}:`, error.message);
+      }
     }
     
     // Remove duplicates and shuffle
     const seen = new Set();
-    recommendations = recommendations.filter(anime => {
-      if (seen.has(anime._id.toString())) return false;
-      seen.add(anime._id.toString());
-      return true;
-    });
-    
-    // Shuffle and limit
-    recommendations = recommendations
+    const recommendations = allRecommendations
+      .filter(anime => {
+        if (seen.has(anime.mal_id)) return false;
+        seen.add(anime.mal_id);
+        return true;
+      })
       .sort(() => Math.random() - 0.5)
       .slice(0, limit);
     
     res.json({
       mode: 'smart-mix',
       recommendations,
-      message: 'Balanced mix across all genres'
+      message: `Balanced mix of ${genres.length} different genres`
     });
   } catch (error) {
+    console.error('Smart Mix error:', error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// New: Content-Based - High rating + great storyline
+// New: Content-Based - Top rated anime by score from Jikan/MyAnimeList
 exports.getContentBased = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 20;
+    const axios = require('axios');
+    const limit = parseInt(req.query.limit) || 25;
     
-    // Get highly rated anime with good story indicators
-    const recommendations = await Anime.find({
-      rating: { $gte: 8.0 }, // High IMDb-like rating
-      $or: [
-        { genres: { $in: ['Drama', 'Mystery', 'Thriller', 'Psychological'] } },
-        { synopsis: { $regex: /(story|plot|narrative|character development)/i } }
-      ]
-    })
-      .sort({ rating: -1, viewCount: -1 })
-      .limit(limit)
-      .lean();
+    // Fetch top-rated anime from Jikan API
+    const response = await axios.get('https://api.jikan.moe/v4/top/anime', {
+      params: {
+        limit: limit,
+        filter: 'bypopularity'
+      }
+    });
+    
+    const recommendations = response.data?.data || [];
+    
+    // Sort by score (highest rated)
+    const sortedRecommendations = recommendations
+      .filter(anime => anime.score >= 8.0) // Only highly rated anime
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, limit);
     
     res.json({
       mode: 'content-based',
-      recommendations,
-      message: 'High-rated anime with compelling storylines'
+      recommendations: sortedRecommendations,
+      message: `Top ${sortedRecommendations.length} highest-rated anime by IMDb/MAL score`
     });
   } catch (error) {
+    console.error('Top Rated error:', error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// New: Community Favorites - Yearly worldwide favorites
+// New: Community Favorites - Yearly worldwide favorites from MyAnimeList
 exports.getCommunityFavorites = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 20;
+    const axios = require('axios');
+    const limit = parseInt(req.query.limit) || 25;
     const year = parseInt(req.query.year) || new Date().getFullYear();
     
-    // Get anime by year, sorted by popularity and rating
-    const recommendations = await Anime.aggregate([
-      {
-        $match: {
-          year: { $gte: year - 1, $lte: year + 1 },
-          rating: { $gte: 7.0 }
+    // Fetch anime by year from Jikan API, sorted by community popularity
+    const response = await axios.get('https://api.jikan.moe/v4/anime', {
+      params: {
+        start_date: `${year}-01-01`,
+        end_date: `${year}-12-31`,
+        order_by: 'members', // Ordered by community member count
+        sort: 'desc',
+        limit: limit,
+        min_score: 6.5
+      }
+    });
+    
+    let recommendations = response.data?.data || [];
+    
+    // If not enough results, try fetching top anime from that year
+    if (recommendations.length < 10) {
+      const topResponse = await axios.get('https://api.jikan.moe/v4/top/anime', {
+        params: {
+          filter: 'bypopularity',
+          limit: limit
         }
-      },
-      {
-        $addFields: {
-          popularityScore: {
-            $add: [
-              { $multiply: ['$rating', 10] },
-              { $divide: ['$viewCount', 100] }
-            ]
-          }
-        }
-      },
-      { $sort: { popularityScore: -1 } },
-      { $limit: limit }
-    ]);
+      });
+      
+      // Filter by year
+      const topAnime = (topResponse.data?.data || []).filter(anime => {
+        const animeYear = anime.year || anime.aired?.prop?.from?.year;
+        return animeYear === year;
+      });
+      
+      recommendations = [...recommendations, ...topAnime].slice(0, limit);
+    }
+    
+    // Remove duplicates
+    const seen = new Set();
+    recommendations = recommendations.filter(anime => {
+      if (seen.has(anime.mal_id)) return false;
+      seen.add(anime.mal_id);
+      return true;
+    });
     
     res.json({
       mode: 'community',
       year,
       recommendations,
-      message: `Community favorites from ${year}`
+      message: `Community favorites from ${year} - Selected by MyAnimeList users worldwide`
     });
   } catch (error) {
+    console.error('Community Picks error:', error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// New: Trending - Monthly top 10
+// New: Trending - Current season's trending anime from MyAnimeList
 exports.getTrending = async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 10;
+    const axios = require('axios');
+    const limit = parseInt(req.query.limit) || 25;
+    
+    // Get current season
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
     
-    // Get recently popular anime based on view count and recent updates
-    const recommendations = await Anime.find({
-      updatedAt: { $gte: thirtyDaysAgo }
-    })
-      .sort({ viewCount: -1, rating: -1, updatedAt: -1 })
-      .limit(limit)
-      .lean();
+    let season = 'fall';
+    if (month >= 1 && month <= 3) season = 'winter';
+    else if (month >= 4 && month <= 6) season = 'spring';
+    else if (month >= 7 && month <= 9) season = 'summer';
     
-    // If not enough recent anime, get popular ones
-    if (recommendations.length < limit) {
-      const additional = await Anime.find({
-        _id: { $nin: recommendations.map(r => r._id) }
+    // Fetch current season's anime from Jikan API
+    const response = await axios.get(`https://api.jikan.moe/v4/seasons/${year}/${season}`, {
+      params: {
+        limit: limit
+      }
+    });
+    
+    let recommendations = response.data?.data || [];
+    
+    // Sort by popularity (members) and score
+    recommendations = recommendations
+      .sort((a, b) => {
+        const scoreA = (a.score || 0) * 0.4 + (a.members || 0) / 10000 * 0.6;
+        const scoreB = (b.score || 0) * 0.4 + (b.members || 0) / 10000 * 0.6;
+        return scoreB - scoreA;
       })
-        .sort({ viewCount: -1, rating: -1 })
-        .limit(limit - recommendations.length)
-        .lean();
-      recommendations.push(...additional);
-    }
+      .slice(0, limit);
     
     res.json({
       mode: 'trending',
       recommendations,
-      message: 'Top trending anime this month',
-      period: 'Last 30 days'
+      message: `Trending anime this ${season} ${year}`,
+      period: `${season.charAt(0).toUpperCase() + season.slice(1)} ${year} Season`,
+      season: season,
+      year: year
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Trending error:', error);
+    
+    // Fallback: Get top airing anime
+    try {
+      const axios = require('axios');
+      const fallbackResponse = await axios.get('https://api.jikan.moe/v4/top/anime', {
+        params: {
+          filter: 'airing',
+          limit: limit
+        }
+      });
+      
+      res.json({
+        mode: 'trending',
+        recommendations: fallbackResponse.data?.data || [],
+        message: 'Currently trending anime',
+        period: 'Current month'
+      });
+    } catch (fallbackError) {
+      res.status(500).json({ error: error.message });
+    }
   }
 };

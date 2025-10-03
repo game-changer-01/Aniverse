@@ -48,6 +48,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/admin-dashboard', require('./routes/adminDashboard'));
 app.use('/api/feedback', require('./routes/feedback'));
 app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/mangadex', require('./routes/mangadex'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

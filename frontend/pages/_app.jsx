@@ -3,6 +3,7 @@ import Layout from '../src/components/Layout';
 import { ToastProvider } from '../src/components/ToastProvider';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { ThemeProvider } from '../src/contexts/ThemeContext';
+import { ClerkProvider } from '@clerk/nextjs';
 import Script from 'next/script';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
@@ -48,17 +49,19 @@ export default function App({ Component, pageProps }) {
   }, [router, isMounted]);
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <Script src="https://accounts.google.com/gsi/client" async defer strategy="afterInteractive" />
-          <div ref={overlayRef} aria-hidden className="route-overlay" />
-          {getLayout(<Component {...pageProps} />)}
-          <style jsx global>{`
-            .route-overlay { position:fixed; inset:0; background:var(--color-glass); backdrop-filter:blur(8px); z-index:9999; opacity:0; pointer-events:none; }
-          `}</style>
-        </ToastProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ClerkProvider {...pageProps}>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <Script src="https://accounts.google.com/gsi/client" async defer strategy="afterInteractive" />
+            <div ref={overlayRef} aria-hidden className="route-overlay" />
+            {getLayout(<Component {...pageProps} />)}
+            <style jsx global>{`
+              .route-overlay { position:fixed; inset:0; background:var(--color-glass); backdrop-filter:blur(8px); z-index:9999; opacity:0; pointer-events:none; }
+            `}</style>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ClerkProvider>
   );
 }

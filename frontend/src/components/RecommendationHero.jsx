@@ -13,11 +13,13 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
   const particlesRef = useRef([]);
   const videoRef = useRef(null);
   const playlist = React.useMemo(() => [
-    '/video/hero-trailer.mp4',
+    '/video/hero-trailer1.mp4',
     '/video/hero-trailer2.mp4',
     '/video/hero-trailer3.mp4',
+    '/video/hero-trailer4.mp4',
+    '/video/hero-trailer5.mp4',
   ], []);
-  const [videoIndex, setVideoIndex] = useState(() => Math.floor(Math.random() * 3));
+  const [videoIndex, setVideoIndex] = useState(() => Math.floor(Math.random() * 5));
   const currentVideoSrc = playlist[videoIndex];
   const [isLoaded, setIsLoaded] = useState(false);
   // Conditional router - only use on client-side
@@ -161,7 +163,7 @@ const RecommendationHero = ({ user, onStartRecommendations, showStartCta = false
       <div className="section-break" />
       
       <style jsx>{`
-  .recommendation-hero { position:relative; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; color:var(--color-text); }
+  .recommendation-hero { position:relative; min-height:100vh; margin-top: -80px; padding-top: 80px; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; color:var(--color-text); }
   .video-bg { position:absolute; inset:0; z-index:2; }
   .bg-video { width:100%; height:100%; object-fit:cover; background:none; }
   .video-vignette { position:absolute; inset:0; background:linear-gradient(180deg, var(--color-shadow-light) 0%, var(--color-shadow) 40%, var(--color-shadow-heavy) 75%, var(--color-bg) 100%); pointer-events:none; }
