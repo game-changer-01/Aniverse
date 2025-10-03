@@ -49,7 +49,10 @@ export default function App({ Component, pageProps }) {
   }, [router, isMounted]);
 
   return (
-    <ClerkProvider {...pageProps}>
+    <ClerkProvider 
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      {...pageProps}
+    >
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>
