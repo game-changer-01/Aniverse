@@ -1,30 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useUser, useClerk } from '@clerk/nextjs';
 import { useRouter } from 'next/router';
 
 const UserProfile = ({ collapsed }) => {
-  const { user: legacyUser, isAuthenticated: legacyAuth, logout: legacyLogout } = useAuth();
-  const { user: clerkUser, isSignedIn: clerkSignedIn } = useUser();
-  const { signOut } = useClerk();
+  const { user, isAuthenticated, logout } = useAuth();
   // Conditional router - only use on client-side
   const router = typeof window !== 'undefined' ? useRouter() : null;
   const [showMenu, setShowMenu] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const menuRef = useRef(null);
-
-  // Use Clerk user if available, otherwise fall back to legacy auth
-  const user = clerkSignedIn && clerkUser 
-    ? {
-        username: clerkUser.username || clerkUser.firstName || clerkUser.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'User',
-        email: clerkUser.emailAddresses?.[0]?.emailAddress || '',
-        avatar: clerkUser.imageUrl,
-        firstName: clerkUser.firstName,
-        lastName: clerkUser.lastName,
-      }
-    : legacyUser;
-  
-  const isAuthenticated = clerkSignedIn || legacyAuth;
 
   // Track mount state
   useEffect(() => {
@@ -44,11 +28,7 @@ const UserProfile = ({ collapsed }) => {
 
   const handleLogout = async () => {
     setShowMenu(false);
-    if (clerkSignedIn) {
-      await signOut();
-    } else if (legacyAuth) {
-      legacyLogout();
-    }
+    logout();
     if (isMounted && router) {
       router.push('/');
     }
