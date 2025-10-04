@@ -9,9 +9,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import anime from 'animejs';
 
-// Get Clerk publishable key from environment variables
-const clerkPubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
 export default function App({ Component, pageProps }) {
   const getLayout = Component.getLayout || ((page) => <Layout>{page}</Layout>);
   // Conditional router - only use on client-side
@@ -50,6 +47,9 @@ export default function App({ Component, pageProps }) {
       router.events.off('routeChangeError', done);
     };
   }, [router, isMounted]);
+
+  // Get Clerk publishable key from environment variables with fallback
+  const clerkPubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
 
   return (
     <ClerkProvider publishableKey={clerkPubKey} {...pageProps}>
