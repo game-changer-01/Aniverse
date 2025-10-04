@@ -1,22 +1,8 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-
-// Define public routes that don't require authentication
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/catalog',
-  '/news',
-  '/auth(.*)',
-  '/api/news',
-  '/api/jikan/(.*)',
-  '/api/anime/(.*)',
-  '/jikan/(.*)',
-]);
-
-export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
-    await auth.protect();
-  }
-});
+// Simple middleware without Clerk
+export function middleware(request) {
+  // No authentication checks for now
+  return;
+}
 
 export const config = {
   matcher: [

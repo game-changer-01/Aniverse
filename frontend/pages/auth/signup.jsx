@@ -1,35 +1,70 @@
-﻿import React from 'react';
-import { SignUp } from '@clerk/nextjs';
+import React, { useState } from 'react';
+import { useAuth } from '../../src/contexts/AuthContext';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 export default function SignupPage() {
-  return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-header">
-          <Link href="/" className="back-link">
-            <span className="material-icons">arrow_back</span>
-            Back to Home
-          </Link>
-        </div>
-        
-        <div className="auth-content">
-          <div className="auth-branding">
-            <h1 className="brand-title">Guide2Anime</h1>
-            <p className="brand-subtitle">Join Us!</p>
-            <p className="brand-description">Create an account to get personalized anime recommendations</p>
-          </div>
+  const { signup } = useAuth();
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
 
-          <div className="clerk-wrapper">
-            <SignUp 
-              routing="hash"
-              afterSignInUrl="/recommendations"
-              afterSignUpUrl="/recommendations"
-              signInUrl="/auth/login"
-              forceRedirectUrl="/recommendations"
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await signup(email, password, name);
+    if (result.success) {
+      router.push('/recommendations');
+    } else {
+      setError(result.message || 'Signup failed');
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ maxWidth: '400px', width: '100%', background: 'var(--color-surface)', padding: '2rem', borderRadius: '12px' }}>
+        <Link href="/">Back to Home</Link>
+        <h1>Sign Up</h1>
+        <form onSubmit={handleSubmit}>
+          {error && <p style={{ color: 'red' }}>{error}</p>}
+          <div style={{ marginBottom: '1rem' }}>
+            <label>Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
             />
           </div>
-        </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+            />
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }}
+            />
+          </div>
+          <button type="submit" style={{ width: '100%', padding: '0.75rem', background: '#ffd700', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+            Sign Up
+          </button>
+          <p style={{ marginTop: '1rem', textAlign: 'center' }}>
+            Already have an account? <Link href="/auth/login">Login</Link>
+          </p>
+        </form>
       </div>
     </div>
   );
