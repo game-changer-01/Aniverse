@@ -267,7 +267,7 @@ const RecommendationsPage = () => {
               .filter(e => (e.type || '').toLowerCase() === 'anime' && /movie/i.test(e.name || e.title || ''));
             setRelatedMovies(relMovies);
           } catch {}
-          // Fetch all episodes for this anime (paginate)
+            // Fetch all episodes for this anime (paginate)
           try {
             let all = [];
             let page = 1;
@@ -282,6 +282,83 @@ const RecommendationsPage = () => {
             }
             setSelectedAnimeEpisodes(all);
             if (!totalEpisodes && all.length) totalEpisodes = all.length;
+
+            // --- New: attempt to group episodes into production seasons by air-date gaps ---
+            const parseAirDate = (ep) => {
+              // Try multiple known date fields that may be present in different API versions
+              const cand = ep.aired || ep.aired_at || ep.aired_on || ep.aired_date || (ep.aired && (ep.aired.from || ep.aired.date));
+              if (!cand) return null;
+              const d = Date.parse(cand);
+              if (!isNaN(d)) return new Date(d);
+              // try other nested formats
+              if (ep.aired && typeof ep.aired === 'object') {
+                const from = ep.aired.from || ep.aired_from || ep.airedDate;
+                const dd = Date.parse(from);
+                if (!isNaN(dd)) return new Date(dd);
+              }
+              return null;
+            };
+
+            // Normalize episodes with number + parsed date
+            const normalized = all.map((ep, idx) => {
+              const num = ep.episode || ep.number || ep.mal_id || (idx + 1);
+              const date = parseAirDate(ep);
+              return { ...ep, __num: Number(num) || (idx + 1), __date: date };
+            }).sort((a, b) => (a.__num - b.__num));
+
+            // If we have at least some valid dates, split into seasons where there's a large gap
+            const gapDays = 60; // gap threshold in days to mark a new production season
+            let seasons = [];
+            if (normalized.some(e => e.__date)) {
+              let current = [];
+              for (let i = 0; i < normalized.length; i++) {
+                const ep = normalized[i];
+                if (current.length === 0) {
+                  current.push(ep);
+                } else {
+                  const prev = current[current.length - 1];
+                  if (prev.__date && ep.__date) {
+                    const diff = (ep.__date - prev.__date) / (1000 * 60 * 60 * 24);
+                    if (diff > gapDays) {
+                      seasons.push(current);
+                      current = [ep];
+                    } else {
+                      current.push(ep);
+                    }
+                  } else {
+                    // missing date on one side -> just append
+                    current.push(ep);
+                  }
+                }
+              }
+              if (current.length) seasons.push(current);
+            }
+
+            // Fallback: if no date-based grouping produced more than one season, but total ep count suggests multiple
+            if ((!seasons || seasons.length <= 1) && normalized.length > 12) {
+              const estCount = Math.max(1, Math.min(5, Math.ceil(normalized.length / 12)));
+              const per = Math.ceil(normalized.length / estCount);
+              seasons = Array.from({ length: estCount }).map((_, i) => normalized.slice(i * per, (i + 1) * per)).filter(g => g.length);
+            }
+
+            // If still empty, create a single season group
+            if (!seasons || seasons.length === 0) seasons = [normalized];
+
+            // Build seasonData entries with episodes arrays and descriptive subtitle
+            const seasonGroups = seasons.map((group, i) => {
+              const start = group[0]?.__num || 1;
+              const end = group[group.length - 1]?.__num || group.length;
+              const startDate = group[0]?.__date ? group[0].__date.toLocaleDateString() : null;
+              const endDate = group[group.length - 1]?.__date ? group[group.length - 1].__date.toLocaleDateString() : null;
+              const subtitle = `${group.length} ep${group.length>1?'s':''}${startDate && endDate ? ` · ${startDate} — ${endDate}` : ''}`;
+              return { key:`s${i+1}`, label:`Season ${i+1}`, color: palette[i % palette.length], subtitle, episodes: group };
+            });
+
+            // Use the season groups if they look reasonable
+            if (seasonGroups && seasonGroups.length > 0) {
+              seasonData = seasonGroups;
+            }
+
           } catch {}
         } else {
           // Fallback to local database details if MAL id is missing
@@ -415,6 +492,23 @@ const RecommendationsPage = () => {
     return [start, end];
   };
   const episodesForSeason = () => {
+    // If seasonData contains grouped episodes (from date-gap grouping), prefer that
+    try {
+      const sd = selectedAnimeInfo?.seasonData;
+      if (Array.isArray(sd) && sd.length > 0 && sd[0].episodes) {
+        const idx = Math.max(0, (season && season.startsWith('s') ? (parseInt(season.slice(1)) - 1) : 0));
+        const group = sd[idx] || [];
+        const arr = Array.isArray(group) ? group : (group.episodes || []);
+        if (!arr || arr.length === 0) return [];
+        return arr.filter(ep => {
+          if (episodeFilter === 'canon') return !ep.filler;
+          return true;
+        });
+      }
+    } catch (e) {
+      // ignore and fallback
+    }
+
     if (!selectedAnimeEpisodes || selectedAnimeEpisodes.length === 0) return [];
     const [start, end] = seasonSliceRange(selectedAnimeInfo?.totalEpisodes || selectedAnimeEpisodes.length);
     return selectedAnimeEpisodes.filter(ep => {
@@ -519,16 +613,13 @@ const RecommendationsPage = () => {
           )}
           {selectedAnimeInfo.title && (
             <div className="selected-anime-summary">
-              <h3>{selectedAnimeInfo.title}</h3>
-              {selectedAnimeInfo.seasonData?.length > 0 && (
-                <p>{selectedAnimeInfo.seasonData.length} season(s) detected</p>
-              )}
+              <h3 className="anime-title">{selectedAnimeInfo.title}</h3>
             </div>
           )}
           
           {/* Main roadmap heading */}
           <div className="roadmap-main-heading">
-            <h2>Roadmap to Your Anime</h2>
+            <h2>Roadmap to Anime</h2>
           </div>
           
           <SeasonRoadmap
@@ -536,14 +627,13 @@ const RecommendationsPage = () => {
             onSelect={handleSeasonChange}
             disabled={loading}
             seasonData={selectedAnimeInfo.seasonData}
-            title={selectedAnimeInfo.title ? `${selectedAnimeInfo.title} — Seasons` : undefined}
             relatedMovies={relatedMovies}
           />
           {/* Episodes for the selected anime and season */}
           {episodesForSeason().length > 0 && (
             <div className="episodes-section">
               <div className="ep-header">
-                <h2 className="section-title">{(SEASONS.find(s => s.key === season)?.label || 'Season')} Episodes</h2>
+                <h2 className="section-title">{(selectedAnimeInfo?.seasonData && selectedAnimeInfo.seasonData[Math.max(0, (season && season.startsWith('s') ? (parseInt(season.slice(1)) - 1) : 0))]?.label) || (SEASONS.find(s => s.key === season)?.label || 'Season')} Episodes</h2>
                 {/* Start button: opens first available platform for the anime */}
                 {Array.isArray(selectedAnimeInfo.streaming) && selectedAnimeInfo.streaming.length > 0 && (
                   <a
